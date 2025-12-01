@@ -10,19 +10,19 @@ const Hero = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="text-white space-y-6 animate-fade-in">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-              ร่วมเส้นชุมรเทค
+              ระบบประกันสังคม
               <br />
-              แย้ยรับริมนาหวง
+              เพื่อคุณและครอบครัว
             </h1>
             <p className="text-lg md:text-xl text-white/90 max-w-xl">
-              ระบบประกันสังคมที่ดูแลคุณและครอบครัว พร้อมให้บริการด้วยความโปร่งใส เป็นธรรม และทั่วถึง
+              มั่นใจในทุกช่วงชีวิต ด้วยสวัสดิการและสิทธิประโยชน์ที่ครบครัน ทั้งด้านสุขภาพ ชราภาพ และการคุ้มครองแรงงาน
             </p>
             <div className="flex flex-wrap gap-4 pt-4">
               <Button 
                 size="lg" 
                 className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold group"
               >
-                ตรวตสานหเล์กที
+                ตรวจสอบสิทธิ์
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button 
@@ -30,7 +30,7 @@ const Hero = () => {
                 variant="outline" 
                 className="border-2 border-white text-white hover:bg-white hover:text-primary font-semibold"
               >
-                เรียนรู้เพิ่มเติม
+                ลงทะเบียนออนไลน์
               </Button>
             </div>
           </div>

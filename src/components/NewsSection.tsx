@@ -4,22 +4,22 @@ import { Calendar } from "lucide-react";
 
 const newsItems = [
   {
-    title: "แนบชื่อทศิกรยงสกงรป์ 2597",
-    description: "ข้อกตรยงด แยกเพอชร์ทีร์ด๊ แกวเกส์ชหเด้",
+    title: "ประกาศอัตราเงินสมทบประกันสังคม ปี 2567",
+    description: "ข้อมูลอัตราเงินสมทบล่าสุด และแนวทางการชำระเงิน สำหรับผู้ประกันตนทุกประเภท",
     date: "15 มกราคม 2567",
-    image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=400&q=80",
+    image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80",
   },
   {
-    title: "แนพชื่อทึมเรกรยางสกปี",
-    description: "ข่อกตระยงด แยกเพอชร์ทึร์ด๊ แกวเกส์ชเด้",
+    title: "เปิดให้บริการแอปพลิเคชัน SSO Connect",
+    description: "ตรวจสอบสิทธิ์ ชำระเงิน และยื่นเอกสารได้ทุกที่ทุกเวลาผ่านมือถือ",
     date: "10 มกราคม 2567",
-    image: "https://images.unsplash.com/photo-1573496774426-fe3db3dd1731?auto=format&fit=crop&w=400&q=80",
+    image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80",
   },
   {
-    title: "Q&A คำถามที่พบบ่อย",
-    description: "ปรึกษาข้อมูลเกี่ยวกับสิทธิประโยชน์",
+    title: "สิทธิประโยชน์กรณีว่างงาน",
+    description: "แนะนำสิทธิรับเงินชดเชยกรณีว่างงาน และวิธีการยื่นคำขอ",
     date: "5 มกราคม 2567",
-    image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=400&q=80",
+    image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=400&q=80",
   },
 ];
 
