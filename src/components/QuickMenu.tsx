@@ -4,17 +4,17 @@ import { Card } from "@/components/ui/card";
 const menuItems = [
   {
     icon: Check,
-    title: "โบรกตตรองร์ที่กี",
+    title: "ตรวจสอบสิทธิ์",
     color: "primary" as const,
   },
   {
     icon: Hospital,
-    title: "บริอกรจักเทเพนาน",
+    title: "ประกันสุขภาพ",
     color: "secondary" as const,
   },
   {
     icon: FileText,
-    title: "สกคร ม. 40",
+    title: "แบบฟอร์ม ม.40",
     color: "secondary" as const,
   },
 ];
