@@ -7,17 +7,17 @@ const Hero = () => {
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJncmlkIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIGQ9Ik0gNDAgMCBMIDAgMCAwIDQwIiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utb3BhY2l0eT0iMC4wNSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-40"></div>
       
       <div className="container mx-auto px-4 py-20 md:py-32 relative">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="max-w-3xl mx-auto text-center">
           <div className="text-white space-y-6 animate-fade-in">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
               ระบบประกันสังคม
               <br />
               เพื่อคุณและครอบครัว
             </h1>
-            <p className="text-lg md:text-xl text-white/90 max-w-xl">
+            <p className="text-lg md:text-xl text-white/90">
               มั่นใจในทุกช่วงชีวิต ด้วยสวัสดิการและสิทธิประโยชน์ที่ครบครัน ทั้งด้านสุขภาพ ชราภาพ และการคุ้มครองแรงงาน
             </p>
-            <div className="flex flex-wrap gap-4 pt-4">
+            <div className="flex flex-wrap gap-4 pt-4 justify-center">
               <Button 
                 size="lg" 
                 className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold group"
@@ -33,15 +33,6 @@ const Hero = () => {
                 ลงทะเบียนออนไลน์
               </Button>
             </div>
-          </div>
-          
-          <div className="relative hidden lg:block">
-            <div className="absolute inset-0 bg-secondary/20 rounded-3xl blur-3xl"></div>
-            <img 
-              src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80" 
-              alt="ทีมงานประกันสังคม" 
-              className="relative rounded-2xl shadow-2xl"
-            />
           </div>
         </div>
       </div>
