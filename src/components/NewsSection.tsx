@@ -13,7 +13,7 @@ const newsItems = [
     title: "เปิดให้บริการแอปพลิเคชัน SSO+",
     description: "ตรวจสอบสิทธิ์ ชำระเงิน และยื่นเอกสารได้ทุกที่ทุกเวลาผ่านมือถือ",
     date: "10 มกราคม 2569",
-    image: "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=400&q=80",
+    image: "https://play-lh.googleusercontent.com/i0srPHjeJZStdiUKgS6d1qs5JZyj5uZldk_3m2iSXWo994hhwcRsbrpMBh7wttgpaw",
   },
   {
     title: "สิทธิประโยชน์กรณีว่างงาน",
