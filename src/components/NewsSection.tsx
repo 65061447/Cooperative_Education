@@ -4,21 +4,21 @@ import { Calendar } from "lucide-react";
 
 const newsItems = [
   {
-    title: "ประกาศอัตราเงินสมทบประกันสังคม ปี 2567",
+    title: "ประกาศอัตราเงินสมทบประกันสังคม ปี 2569",
     description: "ข้อมูลอัตราเงินสมทบล่าสุด และแนวทางการชำระเงิน สำหรับผู้ประกันตนทุกประเภท",
-    date: "15 มกราคม 2567",
+    date: "15 มกราคม 2569",
     image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80",
   },
   {
-    title: "เปิดให้บริการแอปพลิเคชัน SSO Connect",
+    title: "เปิดให้บริการแอปพลิเคชัน SSO+",
     description: "ตรวจสอบสิทธิ์ ชำระเงิน และยื่นเอกสารได้ทุกที่ทุกเวลาผ่านมือถือ",
-    date: "10 มกราคม 2567",
-    image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80",
+    date: "10 มกราคม 2569",
+    image: "https://play-lh.googleusercontent.com/i0srPHjeJZStdiUKgS6d1qs5JZyj5uZldk_3m2iSXWo994hhwcRsbrpMBh7wttgpaw",
   },
   {
     title: "สิทธิประโยชน์กรณีว่างงาน",
     description: "แนะนำสิทธิรับเงินชดเชยกรณีว่างงาน และวิธีการยื่นคำขอ",
-    date: "5 มกราคม 2567",
+    date: "5 มกราคม 2569",
     image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=400&q=80",
   },
 ];
