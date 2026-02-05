@@ -13,7 +13,7 @@ const newsItems = [
     title: "เปิดให้บริการแอปพลิเคชัน SSO+",
     description: "ตรวจสอบสิทธิ์ ชำระเงิน และยื่นเอกสารได้ทุกที่ทุกเวลาผ่านมือถือ",
     date: "10 มกราคม 2569",
-    image: "https://play-lh.googleusercontent.com/i0srPHjeJZStdiUKgS6d1qs5JZyj5uZldk_3m2iSXWo994hhwcRsbrpMBh7wttgpaw",
+    image: "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=400&q=80",
   },
   {
     title: "สิทธิประโยชน์กรณีว่างงาน",
@@ -25,7 +25,8 @@ const newsItems = [
 
 const NewsSection = () => {
   return (
-    <section className="py-16 bg-muted/30">
+    /* ADDED ID AND SCROLL MARGIN HERE */
+    <section id="news-section" className="py-16 bg-muted/30 scroll-mt-10">
       <div className="container mx-auto px-4">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-foreground mb-2">ข่าวสารล่าสุด</h2>

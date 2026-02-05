@@ -23,7 +23,7 @@ const Header = () => {
           </div>
 
           <div className="hidden md:block border-l-2 border-gray-200 pl-4">
-            <div className="font-bold text-[#334e5e] text-xl leading-tight">
+            <div className="font-bold text-[#334e5e] text-xl leading-tight text-sarabun">
               สำนักงานประกันสังคม
             </div>
             <div className="text-[11px] text-gray-400 font-bold tracking-[0.2em] uppercase">
@@ -49,7 +49,7 @@ const Header = () => {
         </div>
       </div>
 
-      {/* --- ROW 2: Utility Bar (Cleaned up font to 14px) --- */}
+      {/* --- ROW 2: Utility Bar --- */}
       <div className="bg-white py-2 border-t border-gray-50">
         <div className="container mx-auto px-4">
           <div className="flex justify-end items-center gap-5 text-[14px] font-medium text-gray-600">
@@ -78,7 +78,7 @@ const Header = () => {
         </div>
       </div>
 
-      {/* --- ROW 3: Main Navigation (Slate Blue, Font to 16px) --- */}
+      {/* --- ROW 3: Main Navigation --- */}
       <div className="bg-[#334e5e] text-white">
         <div className="container mx-auto px-4">
           <nav className="flex items-center h-12 gap-7 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -89,7 +89,8 @@ const Header = () => {
             {navLinks.map((link) => (
               <a 
                 key={link} 
-                href="#" 
+                /* Fixed the link to point to the ID we created in NewsSection */
+                href={link === "ข่าวประชาสัมพันธ์" ? "#news-section" : "#"} 
                 className="text-base font-semibold text-white/90 hover:text-[#d4c391] whitespace-nowrap transition-all shrink-0"
               >
                 {link}
