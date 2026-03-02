@@ -13,14 +13,12 @@ import {
 import { 
   FileSpreadsheet, FileImage, 
   FileText, Table as TableIcon, 
-  BarChart3, Phone, MessageCircle, Facebook, Youtube, Send,
-  ChevronDown
+  BarChart3, ChevronDown
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 
-// --- Interface ---
+// --- Interfaces ---
 interface AccidentData {
   ปี: string;
   ตาย: number;
@@ -33,14 +31,15 @@ interface AccidentData {
 
 type ExcelRow = (string | number | undefined | null)[];
 
-// --- Footer Component ---
-
-// --- Main Page Component ---
 const Graph: React.FC = () => {
   const [yearlyData, setYearlyData] = useState<AccidentData[]>([]);
   const [chartType, setChartType] = useState<"line" | "stacked">("line");
   const chartRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
+  const tableScrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // LOCKED TITLE
+  const FIXED_TITLE = "ตารางที่ 6 จำนวนวินิจฉัยการประสบอันตรายหรือเจ็บป่วยเนื่องจากการทำงาน 2558-2567";
 
   useEffect(() => {
     const loadExcel = async () => {
@@ -52,7 +51,6 @@ const Graph: React.FC = () => {
         const sheet = workbook.Sheets[workbook.SheetNames.find(n => n.includes("6")) || workbook.SheetNames[0]];
         const raw = XLSX.utils.sheet_to_json<ExcelRow>(sheet, { header: 1 });
         
-        // Slicing strictly for 2558-2567 (10 years)
         const data = raw.slice(22, 32).map((row): AccidentData => ({
           ปี: String(row[0] ?? ""),
           ตาย: Number(row[1]) || 0,
@@ -76,10 +74,33 @@ const Graph: React.FC = () => {
       XLSX.writeFile(wb, `Accident_Data_${target}.xlsx`);
       return;
     }
+
     const element = target === 'chart' ? chartRef.current : tableRef.current;
+    const scrollContainer = tableScrollContainerRef.current;
     if (!element) return;
+
     try {
-      const dataUrl = await toPng(element, { backgroundColor: "#ffffff", cacheBust: true });
+      // 1. TEMPORARY EXPANSION (The "No-Option" Fix)
+      // If capturing the table, we force the container to be wide so no scrollbars exist
+      if (target === 'table' && scrollContainer) {
+        scrollContainer.style.overflowX = "visible";
+        scrollContainer.style.width = "auto";
+        scrollContainer.style.display = "block";
+      }
+
+      // 2. SIMPLE CAPTURE
+      const dataUrl = await toPng(element, { 
+        backgroundColor: "#ffffff",
+        cacheBust: true 
+      });
+
+      // 3. REVERT STYLES IMMEDIATELY
+      if (target === 'table' && scrollContainer) {
+        scrollContainer.style.overflowX = "auto";
+        scrollContainer.style.width = "100%";
+        scrollContainer.style.display = ""; // Reset to default
+      }
+
       if (type === 'pdf') {
         const pdf = new jsPDF("l", "mm", "a4");
         const imgProps = pdf.getImageProperties(dataUrl);
@@ -93,7 +114,11 @@ const Graph: React.FC = () => {
         link.href = dataUrl;
         link.click();
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error("Export Error:", e);
+        // Ensure styles revert even if it fails
+        if (scrollContainer) scrollContainer.style.overflowX = "auto";
+    }
   };
 
   return (
@@ -103,7 +128,7 @@ const Graph: React.FC = () => {
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-l-4 border-blue-600 pl-5">
           <h1 className="text-2xl font-black text-slate-900 leading-tight">
-            ตารางที่ 6 จำนวนวินิจฉัยการประสบอันตรายหรือเจ็บป่วยเนื่องจากการทำงาน 2558-2567
+            {FIXED_TITLE}
           </h1>
           
           <div className="relative inline-block w-full md:w-72">
@@ -119,28 +144,27 @@ const Graph: React.FC = () => {
           </div>
         </div>
 
-        {/* Chart Section */}
+        {/* --- Chart Section --- */}
         <section className="bg-white p-8 md:p-10 rounded-[2rem] shadow-sm border border-slate-100">
           <div ref={chartRef} className="bg-white p-4">
             <h2 className="text-xl font-bold text-slate-800 mb-8 flex items-center gap-2">
-              <BarChart3 className="text-blue-600" size={22} /> จำนวนวินิจฉัยการประสบอันตรายหรือเจ็บป่วยเนื่องจากการทำงาน 2558-2567
+              <BarChart3 className="text-blue-600" size={22} /> {FIXED_TITLE}
             </h2>
-            <p className="text-sm font-bold text-slate-600 mb-2">จำนวน (ราย)</p>
             <div className="w-full h-[450px]">
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === "line" ? (
                   <LineChart data={yearlyData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
                     <CartesianGrid strokeDasharray="0" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="ปี" axisLine={{stroke: '#e2e8f0'}} tickLine={false} tick={{fill: '#64748b', fontWeight: 'bold'}} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} domain={[0, 140000]} ticks={[0, 20000, 40000, 60000, 80000, 100000, 120000, 140000]} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
                     <Tooltip formatter={(val: number) => val.toLocaleString()} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
                     <Legend verticalAlign="top" align="right" layout="vertical" wrapperStyle={{paddingLeft: '20px'}} />
-                    <Line name="ตาย" type="monotone" dataKey="ตาย" stroke="#ef4444" strokeWidth={3} dot={{ r: 4, fill: '#ef4444' }} />
-                    <Line name="ทุพพลภาพ" type="monotone" dataKey="ทุพพลภาพ" stroke="#1d4ed8" strokeWidth={3} dot={{ r: 4, fill: '#1d4ed8' }} />
-                    <Line name="สูญเสียอวัยวะ" type="monotone" dataKey="สูญเสีย" stroke="#15803d" strokeWidth={3} dot={{ r: 4, fill: '#15803d' }} />
-                    <Line name="หยุดงาน > 3 วัน" type="monotone" dataKey="หยุดงานเกิน3" stroke="#f97316" strokeWidth={3} dot={{ r: 4, fill: '#f97316' }} />
-                    <Line name="หยุดงาน ≤ 3 วัน" type="monotone" dataKey="หยุดงานไม่เกิน3" stroke="#7e22ce" strokeWidth={3} dot={{ r: 4, fill: '#7e22ce' }} />
-                    <Line name="รวม" type="monotone" dataKey="รวม" stroke="#0f172a" strokeWidth={4} dot={{ r: 5, fill: '#0f172a' }} />
+                    <Line name="ตาย" type="monotone" dataKey="ตาย" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} />
+                    <Line name="ทุพพลภาพ" type="monotone" dataKey="ทุพพลภาพ" stroke="#1d4ed8" strokeWidth={3} dot={{ r: 4 }} />
+                    <Line name="สูญเสียอวัยวะ" type="monotone" dataKey="สูญเสีย" stroke="#15803d" strokeWidth={3} dot={{ r: 4 }} />
+                    <Line name="หยุดงาน > 3 วัน" type="monotone" dataKey="หยุดงานเกิน3" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} />
+                    <Line name="หยุดงาน ≤ 3 วัน" type="monotone" dataKey="หยุดงานไม่เกิน3" stroke="#7e22ce" strokeWidth={3} dot={{ r: 4 }} />
+                    <Line name="รวม" type="monotone" dataKey="รวม" stroke="#0f172a" strokeWidth={4} dot={{ r: 5 }} />
                   </LineChart>
                 ) : (
                   <ComposedChart data={yearlyData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
@@ -154,7 +178,7 @@ const Graph: React.FC = () => {
                     <Bar name="สูญเสียอวัยวะ" dataKey="สูญเสีย" stackId="a" fill="#f59e0b" />
                     <Bar name="ทุพพลภาพ" dataKey="ทุพพลภาพ" stackId="a" fill="#8b5cf6" />
                     <Bar name="ตาย" dataKey="ตาย" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                    <Line name="รวม" type="monotone" dataKey="รวม" stroke="#0f172a" strokeWidth={4} dot={{ r: 5, fill: '#0f172a' }} />
+                    <Line name="รวม" type="monotone" dataKey="รวม" stroke="#0f172a" strokeWidth={4} dot={{ r: 5 }} />
                   </ComposedChart>
                 )}
               </ResponsiveContainer>
@@ -167,14 +191,15 @@ const Graph: React.FC = () => {
           </div>
         </section>
 
-        {/* Table Section */}
+        {/* --- Table Section --- */}
         <section className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden">
           <div ref={tableRef} className="bg-white p-6 md:p-8 space-y-6">
             <div className="flex items-center gap-2 px-2">
               <TableIcon size={20} className="text-blue-600" />
-              <h3 className="text-lg font-bold text-slate-800">ตารางที่ 6 จำนวนวินิจฉัยการประสบอันตราย 2558-2567</h3>
+              <h3 className="text-lg font-bold text-slate-800">{FIXED_TITLE}</h3>
             </div>
-            <div className="overflow-x-auto">
+            {/* Added tableScrollContainerRef here to manage expansion during export */}
+            <div ref={tableScrollContainerRef} className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-tight">
                   <tr>
@@ -182,8 +207,8 @@ const Graph: React.FC = () => {
                     <th className="px-6 py-5 text-red-600">ตาย</th>
                     <th className="px-6 py-5">ทุพพลภาพ</th>
                     <th className="px-6 py-5">สูญเสียอวัยวะ</th>
-                    <th className="px-6 py-5">หยุดงาน {'>'} 3 วัน</th>
-                    <th className="px-6 py-5">หยุดงาน {'<'} 3 วัน</th>
+                    <th className="px-6 py-5 whitespace-nowrap">หยุดงาน {'>'} 3 วัน</th>
+                    <th className="px-6 py-5 whitespace-nowrap">หยุดงาน {'<'} 3 วัน</th>
                     <th className="px-6 py-5 font-black bg-blue-50 text-blue-800 text-center">รวม</th>
                   </tr>
                 </thead>
@@ -202,6 +227,11 @@ const Graph: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+          <div className="flex flex-wrap justify-center gap-4 py-8 bg-slate-50/50 border-t border-slate-100">
+            <button onClick={() => handleExport('table', 'excel')} className="flex items-center gap-2 px-6 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl font-bold hover:bg-emerald-100 text-sm transition-all"><FileSpreadsheet size={16} /> Export Table Excel</button>
+            <button onClick={() => handleExport('table', 'png')} className="flex items-center gap-2 px-6 py-2.5 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 text-sm transition-all"><FileImage size={16} /> Save Table Image</button>
+            <button onClick={() => handleExport('table', 'pdf')} className="flex items-center gap-2 px-6 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 text-sm transition-all"><FileText size={16} /> Save Table PDF</button>
           </div>
         </section>
       </main>
