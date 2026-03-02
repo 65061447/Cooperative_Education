@@ -1,6 +1,21 @@
+"use client";
+
+import React from "react";
+import { Link } from "react-router-dom"; // Change this to react-router-dom
 import { Button } from "@/components/ui/button";
-import { Search, Home, Lock, AlertTriangle, Info, HelpCircle, Map, Phone } from "lucide-react";
+import { Search, Home, Lock, AlertTriangle, Info, HelpCircle, Map, Phone, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const navLinks = [
@@ -10,7 +25,7 @@ const Header = () => {
   ];
 
   return (
-    <header className="w-full bg-white">
+    <header className="w-full bg-white shadow-sm">
       {/* --- ROW 1: Branding & Main Actions --- */}
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -23,7 +38,7 @@ const Header = () => {
           </div>
 
           <div className="hidden md:block border-l-2 border-gray-200 pl-4">
-            <div className="font-bold text-[#334e5e] text-xl leading-tight text-sarabun">
+            <div className="font-bold text-[#334e5e] text-xl leading-tight">
               สำนักงานประกันสังคม
             </div>
             <div className="text-[11px] text-gray-400 font-bold tracking-[0.2em] uppercase">
@@ -81,21 +96,59 @@ const Header = () => {
       {/* --- ROW 3: Main Navigation --- */}
       <div className="bg-[#334e5e] text-white">
         <div className="container mx-auto px-4">
-          <nav className="flex items-center h-12 gap-7 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <a href="/" className="hover:text-[#d4c391] transition-colors shrink-0">
+          <nav className="flex items-center h-12 gap-7 overflow-x-auto [scrollbar-width:none]">
+            {/* Link to Home using React Router */}
+            <Link to="/" className="hover:text-[#d4c391] transition-colors shrink-0">
               <Home className="h-5 w-5 fill-current" />
-            </a>
+            </Link>
 
-            {navLinks.map((link) => (
-              <a 
-                key={link} 
-                /* Fixed the link to point to the ID we created in NewsSection */
-                href={link === "ข่าวประชาสัมพันธ์" ? "#news-section" : "#"} 
-                className="text-base font-semibold text-white/90 hover:text-[#d4c391] whitespace-nowrap transition-all shrink-0"
-              >
-                {link}
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              if (link === "คลังความรู้") {
+                return (
+                  <DropdownMenu key={link}>
+                    <DropdownMenuTrigger className="flex items-center gap-1 text-base font-semibold text-white/90 hover:text-[#d4c391] whitespace-nowrap outline-none shrink-0 transition-all">
+                      {link} <ChevronDown size={14} />
+                    </DropdownMenuTrigger>
+                    
+                    <DropdownMenuContent className="w-64 bg-white shadow-xl">
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger className="cursor-pointer text-[#334e5e] font-medium py-3 hover:bg-slate-50 transition-colors">
+                          ข้อมูลสถิติกองทุนเงินทดแทน
+                        </DropdownMenuSubTrigger>
+                        
+                        <DropdownMenuPortal>
+                          <DropdownMenuSubContent className="w-[420px] bg-white p-1 shadow-2xl border-slate-100">
+                            {/* LINK TO GRAPH ROUTE HERE */}
+                            <DropdownMenuItem className="p-0">
+                              <Link 
+                                to="/graph" 
+                                className="w-full h-full py-4 px-5 text-[#334e5e] font-medium leading-relaxed block hover:bg-slate-100 transition-colors"
+                              >
+                                ส่วนที่ 1 สถิติการประสบอันตรายหรือเจ็บป่วยเนื่องจากการทำงานภาพรวมทั่วประเทศ
+                              </Link>
+                            </DropdownMenuItem>
+                          </DropdownMenuSubContent>
+                        </DropdownMenuPortal>
+                      </DropdownMenuSub>
+
+                      <DropdownMenuItem className="cursor-pointer py-3 text-[#334e5e] hover:bg-slate-50">
+                        วารสารประกันสังคม
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              }
+
+              return (
+                <a 
+                  key={link} 
+                  href={link === "ข่าวประชาสัมพันธ์" ? "#news-section" : "#"} 
+                  className="text-base font-semibold text-white/90 hover:text-[#d4c391] whitespace-nowrap transition-all shrink-0"
+                >
+                  {link}
+                </a>
+              );
+            })}
           </nav>
         </div>
       </div>
