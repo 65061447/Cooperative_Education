@@ -4,94 +4,92 @@ import { Button } from "@/components/ui/button";
 const Footer = () => {
   return (
     <footer className="bg-[#334e5e] text-white">
-      <div className="container mx-auto px-6 pt-12 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+      <div className="container mx-auto px-6 py-9">
+        
+        {/* Main Content Area: Scaled to 9 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-9">
           
           {/* Section 1: Official Identity */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-6">
+            <h3 className="text-lg font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-2">
               สำนักงานประกันสังคม
             </h3>
-            <div className="text-base font-medium text-white/90 leading-relaxed space-y-2">
-              <p>สำนักงานใหญ่</p>
-              <p>เลขที่ 88/28 หมู่ 4 ถนนติวานนท์ ตำบลตลาดขวัญ</p>
-              <p>อำเภอเมือง จังหวัดนนทบุรี 11000</p>
-              <p className="mt-4 pt-2 border-t border-white/10">
-                อีเมล: <span className="text-[#d4c391] font-bold">info@sso1506.com</span>
-              </p>
-              <p className="text-sm text-white/50">จำนวนผู้เข้าชม: 13,420,709 คน</p>
+            <div className="text-sm font-medium text-white/90 leading-relaxed">
+              <p>สำนักงานใหญ่ 88/28 หมู่ 4 ถ.ติวานนท์</p>
+              <p>ต.ตลาดขวัญ อ.เมือง จ.นนทบุรี 11000</p>
+              <p className="text-[#d4c391] font-bold mt-2">info@sso1506.com</p>
             </div>
           </div>
 
-          {/* Section 2: Contact & Live Chat */}
-          <div className="space-y-6">
-            <h3 className="text-2xl font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-6">
+          {/* Section 2: Contact */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-2">
               ติดต่อเรา
             </h3>
-            <div className="flex items-center gap-4">
-              <div className="bg-[#d4c391] rounded-xl p-3 text-[#334e5e] shadow-lg">
-                <Phone className="h-7 w-7" />
+            <div className="flex items-center gap-3">
+              <div className="bg-[#d4c391] p-2 rounded-xl shadow-md">
+                <Phone className="h-5 w-5 text-[#334e5e]" />
               </div>
               <div>
-                <div className="font-black text-2xl leading-tight">สายด่วน 1506</div>
-                <div className="text-base text-white/70">สอบถามได้ตลอด 24 ชั่วโมง</div>
+                <div className="font-black text-xl leading-none">สายด่วน 1506</div>
+                <div className="text-xs text-white/60 mt-1">สอบถามได้ตลอด 24 ชั่วโมง</div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="bg-[#00a8b5] rounded-xl p-3 text-white shadow-lg">
-                <MessageCircle className="h-7 w-7" />
+            <div className="flex items-center gap-3">
+              <div className="bg-[#00a8b5] p-2 rounded-xl shadow-md">
+                <MessageCircle className="h-5 w-5 text-white" />
               </div>
               <div>
-                <Button variant="link" className="text-white hover:text-[#d4c391] p-0 h-auto font-black text-2xl">
+                <Button variant="link" className="text-white hover:text-[#d4c391] p-0 h-auto font-black text-xl">
                   Live Chat
                 </Button>
-                <div className="text-base text-white/70">คุยกับเจ้าหน้าที่โดยตรง</div>
+                <div className="text-xs text-white/60">คุยกับเจ้าหน้าที่โดยตรง</div>
               </div>
             </div>
           </div>
 
-          {/* Section 3: Useful Links */}
-          <div>
-            <h3 className="text-2xl font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-6">
+          {/* Section 3: Quick Links */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-2">
               ลิงก์ที่สำคัญ
             </h3>
-            <ul className="space-y-4 text-lg font-semibold">
-              <li><a href="#" className="hover:text-[#d4c391] hover:underline underline-offset-4 decoration-2 transition-all">เกี่ยวกับเรา</a></li>
-              <li><a href="#" className="hover:text-[#d4c391] hover:underline underline-offset-4 decoration-2 transition-all">สิทธิประโยชน์</a></li>
-              <li><a href="#" className="hover:text-[#d4c391] hover:underline underline-offset-4 decoration-2 transition-all">วิธีการสมัคร</a></li>
-              <li><a href="#" className="hover:text-[#d4c391] hover:underline underline-offset-4 decoration-2 transition-all">ดาวน์โหลดแบบฟอร์ม</a></li>
+            <ul className="space-y-2 text-sm font-semibold">
+              <li><a href="#" className="hover:text-[#d4c391] transition-all">เกี่ยวกับเรา</a></li>
+              <li><a href="#" className="hover:text-[#d4c391] transition-all">สิทธิประโยชน์</a></li>
+              <li><a href="#" className="hover:text-[#d4c391] transition-all">ดาวน์โหลดแบบฟอร์ม</a></li>
             </ul>
           </div>
 
-          {/* Section 4: Social & Policies */}
-          <div>
-            <h3 className="text-2xl font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-6">
+          {/* Section 4: Social */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-2">
               ติดตามเรา
             </h3>
-            <div className="flex gap-4 mb-8">
+            <div className="flex gap-3 mb-4">
               {[Facebook, Youtube, Send].map((Icon, i) => (
-                <Button key={i} size="icon" className="h-12 w-12 bg-white/20 hover:bg-[#d4c391] hover:text-[#334e5e] rounded-full transition-all">
-                  <Icon className="h-6 w-6" />
+                <Button key={i} size="icon" className="h-10 w-10 bg-white/10 hover:bg-[#d4c391] hover:text-[#334e5e] rounded-full transition-all border border-white/5">
+                  <Icon className="h-5 w-5" />
                 </Button>
               ))}
             </div>
-            <div className="space-y-3 text-base font-medium text-white/60">
-              <a href="#" className="block hover:text-white">ประกาศความเป็นส่วนตัว</a>
-              <a href="#" className="block hover:text-white">นโยบายเว็บไซต์</a>
-              <a href="#" className="block hover:text-white">นโยบายการคุ้มครองข้อมูล</a>
+            <div className="text-[10px] text-white/30 font-medium uppercase tracking-wider">
+              ผู้เข้าชม: 13,420,709 คน
             </div>
           </div>
         </div>
 
-        {/* --- RE-ADDED COPYRIGHT SECTION --- */}
-        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm font-medium text-white/40">
-          <p>Copyright © 2026 Social Security Office. All right reserved.</p>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" className="h-auto py-2 px-4 text-sm bg-white/5 hover:bg-white/10 text-white/60 rounded-md">
+        {/* --- Copyright Section --- */}
+        <div className="border-t border-white/10 pt-5 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold text-white/20 tracking-widest uppercase">
+          <p>© 2026 Social Security Office. All right reserved.</p>
+          <div className="flex items-center gap-6">
+            <a href="#" className="hover:text-white/40 transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-white/40 transition-colors">Terms</a>
+            <button className="bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded text-[9px] border border-white/5">
               Re-Consent
-            </Button>
+            </button>
           </div>
         </div>
+
       </div>
     </footer>
   );
