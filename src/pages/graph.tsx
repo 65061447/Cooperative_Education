@@ -227,7 +227,7 @@ const Graph: React.FC = () => {
                   <Bar dataKey="หยุดงานเกิน3" name="หยุดงาน > 3 วัน" stackId="a" fill="#3b82f6" />
                   <Bar dataKey="สูญเสีย" name="สูญเสียอวัยวะ" stackId="a" fill="#f59e0b" />
                   <Bar dataKey="ทุพพลภาพ" name="ทุพพลภาพ" stackId="a" fill="#8b5cf6" />
-                  <Bar dataKey="ตาย" name="ตาย (แท่ง)" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="ตาย" name="ตาย" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
                   <Line type="monotone" dataKey="รวม" name="รวมทั้งหมด" stroke="#1e293b" strokeWidth={4} dot={{ r: 6 }} />
                 </ComposedChart>
               </ResponsiveContainer>
