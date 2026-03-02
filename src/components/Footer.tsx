@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 
 const Footer = () => {
   return (
-    <footer className="bg-[#334e5e] text-white">
-      <div className="container mx-auto px-6 py-9">
+    <footer className="bg-[#334e5e] text-white w-full mt-auto">
+      {/* Container: Maintained pt-9 for top, adjusted pb-4 for a clean bottom edge */}
+      <div className="container mx-auto px-6 pt-9 pb-4">
         
-        {/* Main Content Area: Scaled to 9 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-9">
+        {/* Main Content Grid: Adjusted to mb-6 for a balanced gap above the line */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-6">
           
-          {/* Section 1: Official Identity */}
+          {/* Section 1: Identity */}
           <div className="space-y-4">
             <h3 className="text-lg font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-2">
               สำนักงานประกันสังคม
@@ -48,7 +49,7 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Section 3: Quick Links */}
+          {/* Section 3: Links */}
           <div className="space-y-3">
             <h3 className="text-lg font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-2">
               ลิงก์ที่สำคัญ
@@ -78,14 +79,14 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* --- Copyright Section --- */}
-        <div className="border-t border-white/10 pt-5 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold text-white/20 tracking-widest uppercase">
+        {/* --- Copyright Section: pt-4 for a balanced gap below the line --- */}
+        <div className="border-t border-white/10 pt-4 flex flex-col md:flex-row justify-between items-center text-[8px] leading-none font-medium text-white/20 uppercase tracking-normal">
           <p>© 2026 Social Security Office. All right reserved.</p>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 mt-2 md:mt-0">
             <a href="#" className="hover:text-white/40 transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-white/40 transition-colors">Terms</a>
-            <button className="bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded text-[9px] border border-white/5">
-              Re-Consent
+            <button className="bg-white/5 hover:bg-white/10 px-1.5 py-0.5 rounded text-[7px] border border-white/5">
+              RE-CONSENT
             </button>
           </div>
         </div>

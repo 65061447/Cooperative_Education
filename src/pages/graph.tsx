@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
+import Footer from "@/components/Footer";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip,
   CartesianGrid, ResponsiveContainer, Legend,
@@ -33,54 +34,6 @@ interface AccidentData {
 type ExcelRow = (string | number | undefined | null)[];
 
 // --- Footer Component ---
-const Footer = () => {
-  return (
-    <footer className="bg-[#334e5e] text-white">
-      <div className="container mx-auto px-6 py-9">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-9">
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-2">
-              สำนักงานประกันสังคม
-            </h3>
-            <div className="text-sm font-medium text-white/90 leading-relaxed">
-              <p>สำนักงานใหญ่ 88/28 หมู่ 4 ถ.ติวานนท์</p>
-              <p>ต.ตลาดขวัญ อ.เมือง จ.นนทบุรี 11000</p>
-              <p className="text-[#d4c391] font-bold mt-2">info@sso1506.com</p>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-2">ติดต่อเรา</h3>
-            <div className="flex items-center gap-3">
-              <div className="bg-[#d4c391] p-2 rounded-xl shadow-md"><Phone className="h-5 w-5 text-[#334e5e]" /></div>
-              <div>
-                <div className="font-black text-xl leading-none">สายด่วน 1506</div>
-                <div className="text-xs text-white/60 mt-1">สอบถามได้ตลอด 24 ชั่วโมง</div>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <h3 className="text-lg font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-2">ลิงก์ที่สำคัญ</h3>
-            <ul className="space-y-2 text-sm font-semibold">
-              <li><a href="#" className="hover:text-[#d4c391]">เกี่ยวกับเรา</a></li>
-              <li><a href="#" className="hover:text-[#d4c391]">สิทธิประโยชน์</a></li>
-            </ul>
-          </div>
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-[#d4c391] border-l-4 border-[#d4c391] pl-4 mb-2">ติดตามเรา</h3>
-            <div className="flex gap-3">
-              {[Facebook, Youtube, Send].map((Icon, i) => (
-                <Button key={i} size="icon" className="h-10 w-10 bg-white/10 hover:bg-[#d4c391] rounded-full transition-all border border-white/5"><Icon className="h-5 w-5" /></Button>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="border-t border-white/10 pt-5 text-[10px] font-bold text-white/20 tracking-widest uppercase text-center md:text-left">
-          <p>© 2026 Social Security Office. All right reserved.</p>
-        </div>
-      </div>
-    </footer>
-  );
-};
 
 // --- Main Page Component ---
 const Graph: React.FC = () => {
