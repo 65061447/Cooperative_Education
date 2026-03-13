@@ -48,7 +48,6 @@ const Graph: React.FC = () => {
   const chartRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
-  // --- นี่คือชื่อตารางที่คุณต้องการให้คงไว้ ---
   const FIXED_TITLE = "ตารางที่ 6 จำนวนวินิจฉัยการประสบอันตรายหรือเจ็บป่วยเนื่องจากการทำงาน 2558-2568";
 
   useEffect(() => {
@@ -92,16 +91,9 @@ const Graph: React.FC = () => {
   const handleLegendClick = (item: LegendItem) => {
     const key = (item.dataKey || item.payload?.dataKey) as string;
     if (!key) return;
-
     setSelectedSeries((prev) => {
-      // คลิกครั้งแรก: ซ่อนอย่างอื่น เหลือแค่ตัวที่เลือก
       if (prev.length === 0) return [key];
-      
-      // คลิกครั้งต่อๆ ไป: ถ้าคลิกตัวเดิม ให้เอาออก
-      if (prev.includes(key)) {
-        return prev.filter(k => k !== key);
-      }
-      // ถ้าคลิกตัวใหม่ ให้เพิ่มเข้าไป (Additive)
+      if (prev.includes(key)) return prev.filter(k => k !== key);
       return [...prev, key];
     });
   };
@@ -144,9 +136,9 @@ const Graph: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
       <Header />
-      <main className="flex-1 max-w-7xl mx-auto w-full p-6 py-10 space-y-10">
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 py-10 space-y-10">
         
-        {/* Section 1: Page Heading */}
+        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-l-4 border-blue-600 pl-5">
           <div className="space-y-1">
             <h1 className="text-2xl font-black text-slate-900 leading-tight">{FIXED_TITLE}</h1>
@@ -156,7 +148,7 @@ const Graph: React.FC = () => {
             <select 
               value={chartType}
               onChange={(e) => setChartType(e.target.value as "line" | "stacked")}
-              className="block w-full appearance-none bg-white border border-slate-200 text-slate-700 py-3 px-4 pr-10 rounded-xl font-bold shadow-sm cursor-pointer hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+              className="block w-full appearance-none bg-white border border-slate-200 text-slate-700 py-3 px-4 pr-10 rounded-xl font-bold shadow-sm cursor-pointer"
             >
               <option value="line">สถิติเส้น (Line Chart)</option>
               <option value="stacked">กราฟแท่งสะสม (Stacked Bar)</option>
@@ -165,26 +157,23 @@ const Graph: React.FC = () => {
           </div>
         </div>
 
-        {/* Section 2: Chart Area */}
-        <section className="bg-white p-8 md:p-10 rounded-[2rem] shadow-sm border border-slate-100">
-          <div ref={chartRef} className="bg-white p-4 relative">
+        {/* --- Section: Chart --- */}
+        <section className="bg-white p-6 md:p-10 rounded-[2rem] shadow-sm border border-slate-100">
+          <div ref={chartRef} className="bg-white p-2 relative">
             <h2 className="text-xl font-bold text-slate-800 mb-8 flex items-center gap-2">
               <BarChart3 className="text-blue-600" size={22} /> {FIXED_TITLE}
             </h2>
-            
             <div className="w-full h-[500px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === "line" ? (
-                  <LineChart data={yearlyData} margin={{ top: 10, right: 30, left: 20, bottom: 10 }}>
+                  <LineChart data={yearlyData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
                     <CartesianGrid strokeDasharray="0" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="ปี" tick={{fill: '#64748b', fontWeight: 'bold'}} />
                     <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
                     <Tooltip formatter={(val: number) => val.toLocaleString()} />
                     <Legend 
-                      verticalAlign="top" 
-                      align="right" 
-                      layout="vertical" 
-                      wrapperStyle={{ paddingLeft: '20px', cursor: 'pointer', lineHeight: '24px' }}
+                      verticalAlign="top" align="right" layout="vertical" 
+                      wrapperStyle={{ paddingLeft: '20px', cursor: 'pointer' }}
                       onClick={(data) => handleLegendClick(data as LegendItem)}
                     />
                     <Line hide={isHidden("ตาย")} name="ตาย" type="monotone" dataKey="ตาย" stroke="#ef4444" strokeWidth={3} />
@@ -195,16 +184,14 @@ const Graph: React.FC = () => {
                     <Line hide={isHidden("รวม")} name="รวม" type="monotone" dataKey="รวม" stroke="#0f172a" strokeWidth={4} />
                   </LineChart>
                 ) : (
-                  <ComposedChart data={yearlyData} margin={{ top: 10, right: 30, left: 20, bottom: 10 }}>
+                  <ComposedChart data={yearlyData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
                     <CartesianGrid strokeDasharray="0" vertical={false} stroke="#b4afaf" />
                     <XAxis dataKey="ปี" />
                     <YAxis axisLine={false} tickLine={false} />
                     <Tooltip formatter={(val: number) => val.toLocaleString()} />
                     <Legend 
-                      verticalAlign="top" 
-                      align="right" 
-                      layout="vertical" 
-                      wrapperStyle={{ paddingLeft: '20px', cursor: 'pointer', lineHeight: '24px' }}
+                      verticalAlign="top" align="right" layout="vertical" 
+                      wrapperStyle={{ paddingLeft: '20px', cursor: 'pointer' }}
                       onClick={(data) => handleLegendClick(data as LegendItem)}
                     />
                     <Bar hide={isHidden("หยุดงานไม่เกิน3")} name="หยุดงาน ≤ 3 วัน" dataKey="หยุดงานไม่เกิน3" stackId="a" fill="#00537a" />
@@ -216,62 +203,63 @@ const Graph: React.FC = () => {
                   </ComposedChart>
                 )}
               </ResponsiveContainer>
-
               <div className="absolute right-0 top-[180px] pr-4">
-                <button 
-                  onClick={() => setSelectedSeries([])}
-                  className={`flex items-center gap-1.5 text-xs font-bold transition-all duration-300 ${
-                    selectedSeries.length > 0 ? "text-red-500 opacity-100 cursor-pointer" : "opacity-0 pointer-events-none"
-                  }`}
-                >
+                <button onClick={() => setSelectedSeries([])} className={`flex items-center gap-1.5 text-xs font-bold transition-all ${selectedSeries.length > 0 ? "text-red-500 opacity-100" : "opacity-0 pointer-events-none"}`}>
                   <RotateCcw size={12} /> ล้างการเลือก
                 </button>
               </div>
             </div>
           </div>
-
           <div className="flex flex-wrap justify-center gap-4 mt-10 pt-8 border-t border-slate-50">
-            <button onClick={() => handleExport('chart', 'excel')} className="flex items-center gap-2 px-6 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl font-bold hover:bg-emerald-100 text-sm transition-all"><FileSpreadsheet size={16} /> Export Excel</button>
-            <button onClick={() => handleExport('chart', 'png')} className="flex items-center gap-2 px-6 py-2.5 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 text-sm transition-all"><FileImage size={16} /> Save Chart Image</button>
-            <button onClick={() => handleExport('chart', 'pdf')} className="flex items-center gap-2 px-6 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 text-sm transition-all"><FileText size={16} /> Save Chart PDF</button>
+            <button onClick={() => handleExport('chart', 'excel')} className="flex items-center gap-2 px-6 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl font-bold hover:bg-emerald-100 text-sm"><FileSpreadsheet size={16} /> Export Excel</button>
+            <button onClick={() => handleExport('chart', 'png')} className="flex items-center gap-2 px-6 py-2.5 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 text-sm"><FileImage size={16} /> Save Chart Image</button>
+            <button onClick={() => handleExport('chart', 'pdf')} className="flex items-center gap-2 px-6 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 text-sm"><FileText size={16} /> Save Chart PDF</button>
           </div>
         </section>
 
-        {/* Section 3: Table Area */}
+        {/* --- Section: Table (FIXED NO SCROLL) --- */}
         <section className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden">
-          <div ref={tableRef} className="bg-white p-6 md:p-8 space-y-6">
-            <div className="flex items-center gap-2 px-2">
+          <div ref={tableRef} className="bg-white p-4 md:p-6 space-y-6">
+            <div className="flex items-center gap-2">
               <TableIcon size={20} className="text-blue-600" />
               <h3 className="text-lg font-bold text-slate-800">{FIXED_TITLE}</h3>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-tight">
+            
+            <div className="w-full">
+              <table className="w-full text-[13px] md:text-sm text-left border-collapse table-auto">
+                <thead className="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100">
                   <tr>
-                    <th className="px-6 py-5">ปี พ.ศ.</th>
-                    <th className="px-6 py-5 text-red-600">ตาย</th>
-                    <th className="px-6 py-5">ทุพพลภาพ</th>
-                    <th className="px-6 py-5">สูญเสียอวัยวะ</th>
-                    <th className="px-6 py-5 whitespace-nowrap">หยุดงาน {'>'} 3 วัน</th>
-                    <th className="px-6 py-5 whitespace-nowrap">หยุดงาน {'<'} 3 วัน</th>
-                    <th className="px-6 py-5 font-black bg-blue-50 text-blue-800 text-center">รวม</th>
+                    <th className="px-2 py-4">ปี พ.ศ.</th>
+                    <th className="px-2 py-4 text-red-600">ตาย</th>
+                    <th className="px-2 py-4">ทุพพลภาพ</th>
+                    <th className="px-2 py-4">สูญเสียอวัยวะ</th>
+                    <th className="px-2 py-4">หยุดงาน {'>'} 3 วัน</th>
+                    <th className="px-2 py-4">หยุดงาน {'<'} 3 วัน</th>
+                    <th className="px-2 py-4 font-black bg-blue-50 text-blue-800 text-center">รวม</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 text-slate-700">
                   {yearlyData.map((row, i) => (
                     <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 font-bold text-slate-900">{row.ปี}</td>
-                      <td className="px-6 py-4 font-semibold">{row.ตาย.toLocaleString()}</td>
-                      <td className="px-6 py-4">{row.ทุพพลภาพ.toLocaleString()}</td>
-                      <td className="px-6 py-4">{row.สูญเสีย.toLocaleString()}</td>
-                      <td className="px-6 py-4">{row.หยุดงานเกิน3.toLocaleString()}</td>
-                      <td className="px-6 py-4">{row.หยุดงานไม่เกิน3.toLocaleString()}</td>
-                      <td className="px-6 py-4 font-black text-blue-700 bg-blue-50/20 text-center">{row.รวม.toLocaleString()}</td>
+                      <td className="px-2 py-3 font-bold text-slate-900">{row.ปี}</td>
+                      <td className="px-2 py-3 font-semibold">{row.ตาย.toLocaleString()}</td>
+                      <td className="px-2 py-3">{row.ทุพพลภาพ.toLocaleString()}</td>
+                      <td className="px-2 py-3">{row.สูญเสีย.toLocaleString()}</td>
+                      <td className="px-2 py-3">{row.หยุดงานเกิน3.toLocaleString()}</td>
+                      <td className="px-2 py-3">{row.หยุดงานไม่เกิน3.toLocaleString()}</td>
+                      <td className="px-2 py-3 font-black text-blue-700 bg-blue-50/20 text-center">{row.รวม.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Table Buttons */}
+          <div className="flex flex-wrap justify-center gap-4 py-8 bg-slate-50/50 border-t border-slate-100">
+            <button onClick={() => handleExport('table', 'excel')} className="flex items-center gap-2 px-5 py-2 bg-emerald-100 text-emerald-800 rounded-xl font-bold text-xs"><FileSpreadsheet size={14} /> Export Table Excel</button>
+            <button onClick={() => handleExport('table', 'png')} className="flex items-center gap-2 px-5 py-2 bg-blue-100 text-blue-800 rounded-xl font-bold text-xs"><FileImage size={14} /> Save Table Image</button>
+            <button onClick={() => handleExport('table', 'pdf')} className="flex items-center gap-2 px-5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs"><FileText size={14} /> Save Table PDF</button>
           </div>
         </section>
       </main>
