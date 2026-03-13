@@ -6,6 +6,7 @@ import { HashRouter, Routes, Route } from "react-router-dom"; // Changed to Hash
 import Index from "./pages/Index";
 import Graph from "./pages/graph";
 import NotFound from "./pages/NotFound";
+import Graph2568 from "./pages/graph2568";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/graph" element={<Graph />} />
+          <Route path="/graph2568" element={<Graph2568/>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

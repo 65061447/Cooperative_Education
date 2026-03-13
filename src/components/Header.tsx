@@ -127,6 +127,16 @@ const Header = () => {
                                 ส่วนที่ 1 สถิติการประสบอันตรายหรือเจ็บป่วยเนื่องจากการทำงานภาพรวมทั่วประเทศ
                               </Link>
                             </DropdownMenuItem>
+                            
+                            {/* Added Section 2 */}
+                            <DropdownMenuItem className="p-0">
+                              <Link 
+                                to="/graph2568" 
+                                className="w-full h-full py-4 px-5 text-[#334e5e] font-medium leading-relaxed block hover:bg-slate-100 transition-colors"
+                              >
+                                ส่วนที่ 2 2568
+                              </Link>
+                            </DropdownMenuItem>
                           </DropdownMenuSubContent>
                         </DropdownMenuPortal>
                       </DropdownMenuSub>

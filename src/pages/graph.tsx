@@ -13,7 +13,7 @@ import {
 import { 
   FileSpreadsheet, FileImage, 
   FileText, Table as TableIcon, 
-  BarChart3, ChevronDown
+  BarChart3, ChevronDown, RotateCcw
 } from "lucide-react";
 
 import Header from "@/components/Header";
@@ -29,17 +29,27 @@ interface AccidentData {
   รวม: number;
 }
 
+interface LegendItem {
+  dataKey?: string | number;
+  value?: string;
+  color?: string;
+  payload?: {
+    dataKey?: string;
+  };
+}
+
 type ExcelRow = (string | number | undefined | null)[];
 
 const Graph: React.FC = () => {
   const [yearlyData, setYearlyData] = useState<AccidentData[]>([]);
   const [chartType, setChartType] = useState<"line" | "stacked">("line");
+  const [selectedSeries, setSelectedSeries] = useState<string[]>([]);
+
   const chartRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
-  const tableScrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // LOCKED TITLE
-  const FIXED_TITLE = "ตารางที่ 6 จำนวนวินิจฉัยการประสบอันตรายหรือเจ็บป่วยเนื่องจากการทำงาน 2558-2567";
+  // --- นี่คือชื่อตารางที่คุณต้องการให้คงไว้ ---
+  const FIXED_TITLE = "ตารางที่ 6 จำนวนวินิจฉัยการประสบอันตรายหรือเจ็บป่วยเนื่องจากการทำงาน 2558-2568";
 
   useEffect(() => {
     const loadExcel = async () => {
@@ -60,65 +70,75 @@ const Graph: React.FC = () => {
           หยุดงานไม่เกิน3: Number(row[5]) || 0,
           รวม: Number(row[6]) || 0,
         }));
+
+        const row2568 = raw[45];
+        if (row2568) {
+          data.push({
+            ปี: "2568",
+            ตาย: Number(row2568[1]) || 0,
+            ทุพพลภาพ: Number(row2568[2]) || 0,
+            สูญเสีย: Number(row2568[3]) || 0,
+            หยุดงานเกิน3: Number(row2568[4]) || 0,
+            หยุดงานไม่เกิน3: Number(row2568[5]) || 0,
+            รวม: Number(row2568[6]) || 0,
+          });
+        }
         setYearlyData(data);
       } catch (err) { console.error(err); }
     };
     loadExcel();
   }, []);
 
+  const handleLegendClick = (item: LegendItem) => {
+    const key = (item.dataKey || item.payload?.dataKey) as string;
+    if (!key) return;
+
+    setSelectedSeries((prev) => {
+      // คลิกครั้งแรก: ซ่อนอย่างอื่น เหลือแค่ตัวที่เลือก
+      if (prev.length === 0) return [key];
+      
+      // คลิกครั้งต่อๆ ไป: ถ้าคลิกตัวเดิม ให้เอาออก
+      if (prev.includes(key)) {
+        return prev.filter(k => k !== key);
+      }
+      // ถ้าคลิกตัวใหม่ ให้เพิ่มเข้าไป (Additive)
+      return [...prev, key];
+    });
+  };
+
+  const isHidden = (dataKey: string) => {
+    if (selectedSeries.length === 0) return false;
+    return !selectedSeries.includes(dataKey);
+  };
+
   const handleExport = async (target: 'chart' | 'table', type: 'excel' | 'png' | 'pdf') => {
     if (type === 'excel') {
       const ws = XLSX.utils.json_to_sheet(yearlyData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Data_Summary");
-      XLSX.writeFile(wb, `Accident_Data_${target}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, "Data");
+      XLSX.writeFile(wb, `${FIXED_TITLE}.xlsx`);
       return;
     }
 
     const element = target === 'chart' ? chartRef.current : tableRef.current;
-    const scrollContainer = tableScrollContainerRef.current;
     if (!element) return;
 
     try {
-      // 1. TEMPORARY EXPANSION (The "No-Option" Fix)
-      // If capturing the table, we force the container to be wide so no scrollbars exist
-      if (target === 'table' && scrollContainer) {
-        scrollContainer.style.overflowX = "visible";
-        scrollContainer.style.width = "auto";
-        scrollContainer.style.display = "block";
-      }
-
-      // 2. SIMPLE CAPTURE
-      const dataUrl = await toPng(element, { 
-        backgroundColor: "#ffffff",
-        cacheBust: true 
-      });
-
-      // 3. REVERT STYLES IMMEDIATELY
-      if (target === 'table' && scrollContainer) {
-        scrollContainer.style.overflowX = "auto";
-        scrollContainer.style.width = "100%";
-        scrollContainer.style.display = ""; // Reset to default
-      }
-
+      const dataUrl = await toPng(element, { backgroundColor: "#ffffff", cacheBust: true });
       if (type === 'pdf') {
         const pdf = new jsPDF("l", "mm", "a4");
         const imgProps = pdf.getImageProperties(dataUrl);
         const pdfWidth = pdf.internal.pageSize.getWidth() - 20;
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
         pdf.addImage(dataUrl, "PNG", 10, 10, pdfWidth, pdfHeight);
-        pdf.save(`${target}_report.pdf`);
+        pdf.save(`${FIXED_TITLE}.pdf`);
       } else {
         const link = document.createElement("a");
-        link.download = `${target}_export.png`;
+        link.download = `${FIXED_TITLE}.png`;
         link.href = dataUrl;
         link.click();
       }
-    } catch (e) { 
-        console.error("Export Error:", e);
-        // Ensure styles revert even if it fails
-        if (scrollContainer) scrollContainer.style.overflowX = "auto";
-    }
+    } catch (e) { console.error(e); }
   };
 
   return (
@@ -126,11 +146,12 @@ const Graph: React.FC = () => {
       <Header />
       <main className="flex-1 max-w-7xl mx-auto w-full p-6 py-10 space-y-10">
         
+        {/* Section 1: Page Heading */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-l-4 border-blue-600 pl-5">
-          <h1 className="text-2xl font-black text-slate-900 leading-tight">
-            {FIXED_TITLE}
-          </h1>
-          
+          <div className="space-y-1">
+            <h1 className="text-2xl font-black text-slate-900 leading-tight">{FIXED_TITLE}</h1>
+            <p className="text-slate-500 text-sm font-medium">คลิกที่ชื่อในคำอธิบายกราฟเพื่อเลือกดูเฉพาะส่วนที่ต้องการ</p>
+          </div>
           <div className="relative inline-block w-full md:w-72">
             <select 
               value={chartType}
@@ -144,46 +165,71 @@ const Graph: React.FC = () => {
           </div>
         </div>
 
-        {/* --- Chart Section --- */}
+        {/* Section 2: Chart Area */}
         <section className="bg-white p-8 md:p-10 rounded-[2rem] shadow-sm border border-slate-100">
-          <div ref={chartRef} className="bg-white p-4">
+          <div ref={chartRef} className="bg-white p-4 relative">
             <h2 className="text-xl font-bold text-slate-800 mb-8 flex items-center gap-2">
               <BarChart3 className="text-blue-600" size={22} /> {FIXED_TITLE}
             </h2>
-            <div className="w-full h-[450px]">
+            
+            <div className="w-full h-[500px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === "line" ? (
-                  <LineChart data={yearlyData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+                  <LineChart data={yearlyData} margin={{ top: 10, right: 30, left: 20, bottom: 10 }}>
                     <CartesianGrid strokeDasharray="0" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="ปี" axisLine={{stroke: '#e2e8f0'}} tickLine={false} tick={{fill: '#64748b', fontWeight: 'bold'}} />
+                    <XAxis dataKey="ปี" tick={{fill: '#64748b', fontWeight: 'bold'}} />
                     <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
-                    <Tooltip formatter={(val: number) => val.toLocaleString()} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                    <Legend verticalAlign="top" align="right" layout="vertical" wrapperStyle={{paddingLeft: '20px'}} />
-                    <Line name="ตาย" type="monotone" dataKey="ตาย" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} />
-                    <Line name="ทุพพลภาพ" type="monotone" dataKey="ทุพพลภาพ" stroke="#1d4ed8" strokeWidth={3} dot={{ r: 4 }} />
-                    <Line name="สูญเสียอวัยวะ" type="monotone" dataKey="สูญเสีย" stroke="#15803d" strokeWidth={3} dot={{ r: 4 }} />
-                    <Line name="หยุดงาน > 3 วัน" type="monotone" dataKey="หยุดงานเกิน3" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} />
-                    <Line name="หยุดงาน ≤ 3 วัน" type="monotone" dataKey="หยุดงานไม่เกิน3" stroke="#7e22ce" strokeWidth={3} dot={{ r: 4 }} />
-                    <Line name="รวม" type="monotone" dataKey="รวม" stroke="#0f172a" strokeWidth={4} dot={{ r: 5 }} />
+                    <Tooltip formatter={(val: number) => val.toLocaleString()} />
+                    <Legend 
+                      verticalAlign="top" 
+                      align="right" 
+                      layout="vertical" 
+                      wrapperStyle={{ paddingLeft: '20px', cursor: 'pointer', lineHeight: '24px' }}
+                      onClick={(data) => handleLegendClick(data as LegendItem)}
+                    />
+                    <Line hide={isHidden("ตาย")} name="ตาย" type="monotone" dataKey="ตาย" stroke="#ef4444" strokeWidth={3} />
+                    <Line hide={isHidden("ทุพพลภาพ")} name="ทุพพลภาพ" type="monotone" dataKey="ทุพพลภาพ" stroke="#1d4ed8" strokeWidth={3} />
+                    <Line hide={isHidden("สูญเสีย")} name="สูญเสียอวัยวะ" type="monotone" dataKey="สูญเสีย" stroke="#15803d" strokeWidth={3} />
+                    <Line hide={isHidden("หยุดงานเกิน3")} name="หยุดงาน > 3 วัน" type="monotone" dataKey="หยุดงานเกิน3" stroke="#f97316" strokeWidth={3} />
+                    <Line hide={isHidden("หยุดงานไม่เกิน3")} name="หยุดงาน ≤ 3 วัน" type="monotone" dataKey="หยุดงานไม่เกิน3" stroke="#7e22ce" strokeWidth={3} />
+                    <Line hide={isHidden("รวม")} name="รวม" type="monotone" dataKey="รวม" stroke="#0f172a" strokeWidth={4} />
                   </LineChart>
                 ) : (
-                  <ComposedChart data={yearlyData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+                  <ComposedChart data={yearlyData} margin={{ top: 10, right: 30, left: 20, bottom: 10 }}>
                     <CartesianGrid strokeDasharray="0" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="ปี" axisLine={{stroke: '#e2e8f0'}} tickLine={false} tick={{fill: '#64748b', fontWeight: 'bold'}} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
-                    <Tooltip formatter={(val: number) => val.toLocaleString()} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                    <Legend verticalAlign="top" align="right" layout="vertical" wrapperStyle={{paddingLeft: '20px'}} />
-                    <Bar name="หยุดงาน ≤ 3 วัน" dataKey="หยุดงานไม่เกิน3" stackId="a" fill="#94a3b8" />
-                    <Bar name="หยุดงาน > 3 วัน" dataKey="หยุดงานเกิน3" stackId="a" fill="#3b82f6" />
-                    <Bar name="สูญเสียอวัยวะ" dataKey="สูญเสีย" stackId="a" fill="#f59e0b" />
-                    <Bar name="ทุพพลภาพ" dataKey="ทุพพลภาพ" stackId="a" fill="#8b5cf6" />
-                    <Bar name="ตาย" dataKey="ตาย" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                    <Line name="รวม" type="monotone" dataKey="รวม" stroke="#0f172a" strokeWidth={4} dot={{ r: 5 }} />
+                    <XAxis dataKey="ปี" />
+                    <YAxis axisLine={false} tickLine={false} />
+                    <Tooltip formatter={(val: number) => val.toLocaleString()} />
+                    <Legend 
+                      verticalAlign="top" 
+                      align="right" 
+                      layout="vertical" 
+                      wrapperStyle={{ paddingLeft: '20px', cursor: 'pointer', lineHeight: '24px' }}
+                      onClick={(data) => handleLegendClick(data as LegendItem)}
+                    />
+                    <Bar hide={isHidden("หยุดงานไม่เกิน3")} name="หยุดงาน ≤ 3 วัน" dataKey="หยุดงานไม่เกิน3" stackId="a" fill="#94a3b8" />
+                    <Bar hide={isHidden("หยุดงานเกิน3")} name="หยุดงาน > 3 วัน" dataKey="หยุดงานเกิน3" stackId="a" fill="#3b82f6" />
+                    <Bar hide={isHidden("สูญเสีย")} name="สูญเสียอวัยวะ" dataKey="สูญเสีย" stackId="a" fill="#f59e0b" />
+                    <Bar hide={isHidden("ทุพพลภาพ")} name="ทุพพลภาพ" dataKey="ทุพพลภาพ" stackId="a" fill="#8b5cf6" />
+                    <Bar hide={isHidden("ตาย")} name="ตาย" dataKey="ตาย" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                    <Line hide={isHidden("รวม")} name="รวม" type="monotone" dataKey="รวม" stroke="#0f172a" strokeWidth={4} />
                   </ComposedChart>
                 )}
               </ResponsiveContainer>
+
+              <div className="absolute right-0 top-[180px] pr-4">
+                <button 
+                  onClick={() => setSelectedSeries([])}
+                  className={`flex items-center gap-1.5 text-xs font-bold transition-all duration-300 ${
+                    selectedSeries.length > 0 ? "text-red-500 opacity-100 cursor-pointer" : "opacity-0 pointer-events-none"
+                  }`}
+                >
+                  <RotateCcw size={12} /> ล้างการเลือก
+                </button>
+              </div>
             </div>
           </div>
+
           <div className="flex flex-wrap justify-center gap-4 mt-10 pt-8 border-t border-slate-50">
             <button onClick={() => handleExport('chart', 'excel')} className="flex items-center gap-2 px-6 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl font-bold hover:bg-emerald-100 text-sm transition-all"><FileSpreadsheet size={16} /> Export Excel</button>
             <button onClick={() => handleExport('chart', 'png')} className="flex items-center gap-2 px-6 py-2.5 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 text-sm transition-all"><FileImage size={16} /> Save Chart Image</button>
@@ -191,19 +237,18 @@ const Graph: React.FC = () => {
           </div>
         </section>
 
-        {/* --- Table Section --- */}
+        {/* Section 3: Table Area */}
         <section className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden">
           <div ref={tableRef} className="bg-white p-6 md:p-8 space-y-6">
             <div className="flex items-center gap-2 px-2">
               <TableIcon size={20} className="text-blue-600" />
               <h3 className="text-lg font-bold text-slate-800">{FIXED_TITLE}</h3>
             </div>
-            {/* Added tableScrollContainerRef here to manage expansion during export */}
-            <div ref={tableScrollContainerRef} className="overflow-x-auto">
+            <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-tight">
                   <tr>
-                    <th className="px-6 py-5 whitespace-nowrap">ปี พ.ศ.</th>
+                    <th className="px-6 py-5">ปี พ.ศ.</th>
                     <th className="px-6 py-5 text-red-600">ตาย</th>
                     <th className="px-6 py-5">ทุพพลภาพ</th>
                     <th className="px-6 py-5">สูญเสียอวัยวะ</th>
@@ -227,11 +272,6 @@ const Graph: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          </div>
-          <div className="flex flex-wrap justify-center gap-4 py-8 bg-slate-50/50 border-t border-slate-100">
-            <button onClick={() => handleExport('table', 'excel')} className="flex items-center gap-2 px-6 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl font-bold hover:bg-emerald-100 text-sm transition-all"><FileSpreadsheet size={16} /> Export Table Excel</button>
-            <button onClick={() => handleExport('table', 'png')} className="flex items-center gap-2 px-6 py-2.5 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 text-sm transition-all"><FileImage size={16} /> Save Table Image</button>
-            <button onClick={() => handleExport('table', 'pdf')} className="flex items-center gap-2 px-6 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 text-sm transition-all"><FileText size={16} /> Save Table PDF</button>
           </div>
         </section>
       </main>
