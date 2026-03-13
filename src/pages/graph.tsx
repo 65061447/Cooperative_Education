@@ -196,7 +196,7 @@ const Graph: React.FC = () => {
                   </LineChart>
                 ) : (
                   <ComposedChart data={yearlyData} margin={{ top: 10, right: 30, left: 20, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="0" vertical={false} stroke="#f1f5f9" />
+                    <CartesianGrid strokeDasharray="0" vertical={false} stroke="#b4afaf" />
                     <XAxis dataKey="ปี" />
                     <YAxis axisLine={false} tickLine={false} />
                     <Tooltip formatter={(val: number) => val.toLocaleString()} />
@@ -207,12 +207,12 @@ const Graph: React.FC = () => {
                       wrapperStyle={{ paddingLeft: '20px', cursor: 'pointer', lineHeight: '24px' }}
                       onClick={(data) => handleLegendClick(data as LegendItem)}
                     />
-                    <Bar hide={isHidden("หยุดงานไม่เกิน3")} name="หยุดงาน ≤ 3 วัน" dataKey="หยุดงานไม่เกิน3" stackId="a" fill="#94a3b8" />
-                    <Bar hide={isHidden("หยุดงานเกิน3")} name="หยุดงาน > 3 วัน" dataKey="หยุดงานเกิน3" stackId="a" fill="#3b82f6" />
-                    <Bar hide={isHidden("สูญเสีย")} name="สูญเสียอวัยวะ" dataKey="สูญเสีย" stackId="a" fill="#f59e0b" />
-                    <Bar hide={isHidden("ทุพพลภาพ")} name="ทุพพลภาพ" dataKey="ทุพพลภาพ" stackId="a" fill="#8b5cf6" />
-                    <Bar hide={isHidden("ตาย")} name="ตาย" dataKey="ตาย" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                    <Line hide={isHidden("รวม")} name="รวม" type="monotone" dataKey="รวม" stroke="#0f172a" strokeWidth={4} />
+                    <Bar hide={isHidden("หยุดงานไม่เกิน3")} name="หยุดงาน ≤ 3 วัน" dataKey="หยุดงานไม่เกิน3" stackId="a" fill="#00537a" />
+                    <Bar hide={isHidden("หยุดงานเกิน3")} name="หยุดงาน > 3 วัน" dataKey="หยุดงานเกิน3" stackId="a" fill="#1697a6" />
+                    <Bar hide={isHidden("สูญเสีย")} name="สูญเสียอวัยวะ" dataKey="สูญเสีย" stackId="a" fill="#0e606b" />
+                    <Bar hide={isHidden("ทุพพลภาพ")} name="ทุพพลภาพ" dataKey="ทุพพลภาพ" stackId="a" fill="#ffc24b" />
+                    <Bar hide={isHidden("ตาย")} name="ตาย" dataKey="ตาย" stackId="a" fill="#f47068" radius={[4, 4, 0, 0]} />
+                    <Line hide={isHidden("รวม")} name="รวม" type="monotone" dataKey="รวม" stroke="#0a2344" strokeWidth={4} />
                   </ComposedChart>
                 )}
               </ResponsiveContainer>
