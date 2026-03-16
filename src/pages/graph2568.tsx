@@ -274,7 +274,7 @@ const Graph2568: React.FC = () => {
               <div className="h-[600px]" style={{ minWidth: currentData.length > 8 ? `${currentData.length * 110}px` : '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={currentData} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F8FAFC" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#64748b" />
                     <XAxis 
                       dataKey="category" 
                       angle={-35} 
