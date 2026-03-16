@@ -71,7 +71,6 @@ const Graph2568: React.FC = () => {
         const workbook = XLSX.read(buffer, { type: "array" });
         const dataStore: Record<string, AccidentData2568[]> = {};
 
-        // --- SORT ASCENDING (A -> B, 1 -> 2) ---
         const sortedSheetNames = [...workbook.SheetNames].sort((a, b) => a.localeCompare(b));
 
         sortedSheetNames.forEach((sheetName: string) => {
@@ -82,7 +81,8 @@ const Graph2568: React.FC = () => {
 
           const isSheet14 = sheetName.includes("14");
           const isSheet23 = sheetName.includes("23") || sheetName.includes("ขนาด");
-          const isSheet13 = sheetName.includes("13") || sheetName.includes("22") || sheetName.includes("อายุ");
+          const isSheet22 = sheetName.includes("22") || sheetName.includes("อายุ");
+          const isSheet13 = sheetName.includes("13");
           const isSheet21 = sheetName.includes("21") || sheetName.includes("ผล");
           const isDisease = sheetName.includes("โรค");
 
@@ -93,18 +93,23 @@ const Graph2568: React.FC = () => {
             const row = raw[i];
             if (!row || row.length === 0) continue;
 
+            // --- INDEX SETTING ---
             let idx_cat = 0;
             let idx_data = 1;
             let idx_total = 6;
 
             if (isDisease) {
               if (!diseaseTargetRows.includes(i)) continue;
-              if (i !== 27) {
-                idx_cat = 1; idx_data = 2; idx_total = 7; 
-              } else {
-                idx_cat = 0; idx_data = 2; idx_total = 7; 
-              }
+              idx_cat = (i !== 27) ? 1 : 0; 
+              idx_data = 2; 
+              idx_total = 7;
             } 
+            else if (isSheet22) {
+              // REVERTED: Pulling data starting from index 1 to bring the values back into view
+              idx_cat = 0; 
+              idx_data = 1; 
+              idx_total = 6;
+            }
             else if (isSheet23) {
               idx_cat = 0; idx_data = 1; idx_total = 6;
             } 
@@ -219,7 +224,7 @@ const Graph2568: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-slate-400 uppercase tracking-widest">Ascending Order Locked...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-slate-400 uppercase tracking-widest">Loading...</div>;
 
   const currentData = allSheetsData[activeSheet] || [];
 
@@ -233,7 +238,7 @@ const Graph2568: React.FC = () => {
             <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100">
               <LayoutDashboard size={20} className="text-blue-600" />
             </div>
-            <h1 className="text-xl font-black text-slate-800 tracking-tighter uppercase">ตารางที่ 22  จำนวนนายจ้าง จำนวนลูกจ้าง และจำนวนวินิจฉัยการประสบอันตราย  2568</h1>
+            <h1 className="text-xl font-black text-slate-800 tracking-tighter uppercase">ตารางที่ 22  จำนวนนายจ้าง จำนวนลูกจ้าง และจำนวนวินิจฉัยการประสบอันตราย เจ็บป่วยเนื่องจากการทำงานจำแนกรายหน่วยงาน ปี 2568</h1>
           </div>
           <div className="relative w-full md:w-96">
             <select 
@@ -274,7 +279,7 @@ const Graph2568: React.FC = () => {
               <div className="h-[600px]" style={{ minWidth: currentData.length > 8 ? `${currentData.length * 110}px` : '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={currentData} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#64748b" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F8FAFC" />
                     <XAxis 
                       dataKey="category" 
                       angle={-35} 
@@ -306,7 +311,7 @@ const Graph2568: React.FC = () => {
 
         <section className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
           <div className="p-6 bg-slate-50/50 border-b border-slate-100 font-black text-[10px] text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <TableIcon size={14} /> ตารางที่ 22  จำนวนนายจ้าง จำนวนลูกจ้าง และจำนวนวินิจฉัยการประสบอันตราย  2568
+            <TableIcon size={14} /> ตารางที่ 22  จำนวนนายจ้าง จำนวนลูกจ้าง และจำนวนวินิจฉัยการประสบอันตราย เจ็บป่วยเนื่องจากการทำงานจำแนกรายหน่วยงาน ปี 2568
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-[12px] text-left">
