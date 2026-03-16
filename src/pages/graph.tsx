@@ -4,11 +4,12 @@ import React, { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
+import { useNavigate } from "react-router-dom"; // Added only for navigation
 import Footer from "@/components/Footer";
 import {
   XAxis, YAxis, Tooltip,
   CartesianGrid, ResponsiveContainer, Legend,
-  Bar, ComposedChart, Line
+  Bar, ComposedChart, Line, Cell
 } from "recharts";
 import { 
   FileSpreadsheet, FileImage, 
@@ -41,6 +42,7 @@ interface LegendItem {
 type ExcelRow = (string | number | undefined | null)[];
 
 const Graph: React.FC = () => {
+  const navigate = useNavigate(); // Hook for navigation
   const [yearlyData, setYearlyData] = useState<AccidentData[]>([]);
   const [selectedSeries, setSelectedSeries] = useState<string[]>([]);
 
@@ -86,6 +88,14 @@ const Graph: React.FC = () => {
     };
     loadExcel();
   }, []);
+
+  // Navigation Logic
+const handlePointClick = (entry: AccidentData) => {
+    if (entry.ปี === "2568") {
+      // Use navigate() instead of router.push()
+      navigate("/Graph2568");
+    }
+  };
 
   const handleLegendClick = (item: LegendItem) => {
     const key = (item.dataKey || item.payload?.dataKey) as string;
@@ -137,7 +147,6 @@ const Graph: React.FC = () => {
       <Header />
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 py-10 space-y-10">
         
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-l-4 border-blue-600 pl-5">
           <div className="space-y-1">
             <h1 className="text-2xl font-black text-slate-900 leading-tight">{FIXED_TITLE}</h1>
@@ -145,7 +154,6 @@ const Graph: React.FC = () => {
           </div>
         </div>
 
-        {/* --- Section: Chart (Strict Stacked Bar Only) --- */}
         <section className="bg-white p-6 md:p-10 rounded-[2rem] shadow-sm border border-slate-100">
           <div ref={chartRef} className="bg-white p-2 relative">
             <h2 className="text-xl font-bold text-slate-800 mb-8 flex items-center gap-2">
@@ -157,17 +165,39 @@ const Graph: React.FC = () => {
                   <CartesianGrid strokeDasharray="0" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="ปี" tick={{fill: '#64748b', fontWeight: 'bold'}} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
-                  <Tooltip formatter={(val: number) => val.toLocaleString()} />
+                  <Tooltip formatter={(val: number) => val.toLocaleString()} cursor={{ fill: 'transparent' }} />
                   <Legend 
                     verticalAlign="top" align="right" layout="vertical" 
                     wrapperStyle={{ paddingLeft: '20px', cursor: 'pointer' }}
                     onClick={(data) => handleLegendClick(data as LegendItem)}
                   />
-                  <Bar hide={isHidden("หยุดงานไม่เกิน3")} name="หยุดงาน ≤ 3 วัน" dataKey="หยุดงานไม่เกิน3" stackId="a" fill="#00537a" />
-                  <Bar hide={isHidden("หยุดงานเกิน3")} name="หยุดงาน > 3 วัน" dataKey="หยุดงานเกิน3" stackId="a" fill="#1697a6" />
-                  <Bar hide={isHidden("สูญเสีย")} name="สูญเสียอวัยวะ" dataKey="สูญเสีย" stackId="a" fill="#0e606b" />
-                  <Bar hide={isHidden("ทุพพลภาพ")} name="ทุพพลภาพ" dataKey="ทุพพลภาพ" stackId="a" fill="#ffc24b" />
-                  <Bar hide={isHidden("ตาย")} name="ตาย" dataKey="ตาย" stackId="a" fill="#f47068" radius={[4, 4, 0, 0]} />
+                  
+                  <Bar hide={isHidden("หยุดงานไม่เกิน3")} name="หยุดงาน ≤ 3 วัน" dataKey="หยุดงานไม่เกิน3" stackId="a" fill="#00537a">
+                    {yearlyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} onClick={() => handlePointClick(entry)} style={{ cursor: entry.ปี === "2568" ? 'pointer' : 'default' }} />
+                    ))}
+                  </Bar>
+                  <Bar hide={isHidden("หยุดงานเกิน3")} name="หยุดงาน > 3 วัน" dataKey="หยุดงานเกิน3" stackId="a" fill="#1697a6">
+                    {yearlyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} onClick={() => handlePointClick(entry)} style={{ cursor: entry.ปี === "2568" ? 'pointer' : 'default' }} />
+                    ))}
+                  </Bar>
+                  <Bar hide={isHidden("สูญเสีย")} name="สูญเสียอวัยวะ" dataKey="สูญเสีย" stackId="a" fill="#0e606b">
+                    {yearlyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} onClick={() => handlePointClick(entry)} style={{ cursor: entry.ปี === "2568" ? 'pointer' : 'default' }} />
+                    ))}
+                  </Bar>
+                  <Bar hide={isHidden("ทุพพลภาพ")} name="ทุพพลภาพ" dataKey="ทุพพลภาพ" stackId="a" fill="#ffc24b">
+                    {yearlyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} onClick={() => handlePointClick(entry)} style={{ cursor: entry.ปี === "2568" ? 'pointer' : 'default' }} />
+                    ))}
+                  </Bar>
+                  <Bar hide={isHidden("ตาย")} name="ตาย" dataKey="ตาย" stackId="a" fill="#f47068" radius={[4, 4, 0, 0]}>
+                    {yearlyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} onClick={() => handlePointClick(entry)} style={{ cursor: entry.ปี === "2568" ? 'pointer' : 'default' }} />
+                    ))}
+                  </Bar>
+                  
                   <Line hide={isHidden("รวม")} name="รวม" type="monotone" dataKey="รวม" stroke="#0a2344" strokeWidth={4} />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -185,7 +215,6 @@ const Graph: React.FC = () => {
           </div>
         </section>
 
-        {/* --- Section: Table --- */}
         <section className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden">
           <div ref={tableRef} className="bg-white p-4 md:p-6 space-y-6">
             <div className="flex items-center gap-2">
@@ -208,7 +237,11 @@ const Graph: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-50 text-slate-700">
                   {yearlyData.map((row, i) => (
-                    <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                    <tr 
+                      key={i} 
+                      onClick={() => handlePointClick(row)}
+                      className={`transition-colors ${row.ปี === "2568" ? "bg-blue-50/50 hover:bg-blue-100/50 cursor-pointer" : "hover:bg-slate-50/50"}`}
+                    >
                       <td className="px-2 py-3 font-bold text-slate-900">{row.ปี}</td>
                       <td className="px-2 py-3 font-semibold">{row.ตาย.toLocaleString()}</td>
                       <td className="px-2 py-3">{row.ทุพพลภาพ.toLocaleString()}</td>
