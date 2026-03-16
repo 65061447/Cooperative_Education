@@ -233,7 +233,7 @@ const Graph2568: React.FC = () => {
             <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100">
               <LayoutDashboard size={20} className="text-blue-600" />
             </div>
-            <h1 className="text-xl font-black text-slate-800 tracking-tighter uppercase">Data Analysis 2568</h1>
+            <h1 className="text-xl font-black text-slate-800 tracking-tighter uppercase">ตารางที่ 22  จำนวนนายจ้าง จำนวนลูกจ้าง และจำนวนวินิจฉัยการประสบอันตราย  2568</h1>
           </div>
           <div className="relative w-full md:w-96">
             <select 
@@ -306,7 +306,7 @@ const Graph2568: React.FC = () => {
 
         <section className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
           <div className="p-6 bg-slate-50/50 border-b border-slate-100 font-black text-[10px] text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <TableIcon size={14} /> Full Sheet View
+            <TableIcon size={14} /> ตารางที่ 22  จำนวนนายจ้าง จำนวนลูกจ้าง และจำนวนวินิจฉัยการประสบอันตราย  2568
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-[12px] text-left">
