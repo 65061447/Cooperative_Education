@@ -6,14 +6,14 @@ import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import Footer from "@/components/Footer";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip,
+  XAxis, YAxis, Tooltip,
   CartesianGrid, ResponsiveContainer, Legend,
-  Bar, ComposedChart
+  Bar, ComposedChart, Line
 } from "recharts";
 import { 
   FileSpreadsheet, FileImage, 
   FileText, Table as TableIcon, 
-  BarChart3, ChevronDown, RotateCcw
+  BarChart3, RotateCcw
 } from "lucide-react";
 
 import Header from "@/components/Header";
@@ -42,7 +42,6 @@ type ExcelRow = (string | number | undefined | null)[];
 
 const Graph: React.FC = () => {
   const [yearlyData, setYearlyData] = useState<AccidentData[]>([]);
-  const [chartType, setChartType] = useState<"line" | "stacked">("line");
   const [selectedSeries, setSelectedSeries] = useState<string[]>([]);
 
   const chartRef = useRef<HTMLDivElement>(null);
@@ -144,20 +143,9 @@ const Graph: React.FC = () => {
             <h1 className="text-2xl font-black text-slate-900 leading-tight">{FIXED_TITLE}</h1>
             <p className="text-slate-500 text-sm font-medium">คลิกที่ชื่อในคำอธิบายกราฟเพื่อเลือกดูเฉพาะส่วนที่ต้องการ</p>
           </div>
-          <div className="relative inline-block w-full md:w-72">
-            <select 
-              value={chartType}
-              onChange={(e) => setChartType(e.target.value as "line" | "stacked")}
-              className="block w-full appearance-none bg-white border border-slate-200 text-slate-700 py-3 px-4 pr-10 rounded-xl font-bold shadow-sm cursor-pointer"
-            >
-              <option value="line">สถิติเส้น (Line Chart)</option>
-              <option value="stacked">กราฟแท่งสะสม (Stacked Bar)</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
-          </div>
         </div>
 
-        {/* --- Section: Chart --- */}
+        {/* --- Section: Chart (Strict Stacked Bar Only) --- */}
         <section className="bg-white p-6 md:p-10 rounded-[2rem] shadow-sm border border-slate-100">
           <div ref={chartRef} className="bg-white p-2 relative">
             <h2 className="text-xl font-bold text-slate-800 mb-8 flex items-center gap-2">
@@ -165,43 +153,23 @@ const Graph: React.FC = () => {
             </h2>
             <div className="w-full h-[500px] relative">
               <ResponsiveContainer width="100%" height="100%">
-                {chartType === "line" ? (
-                  <LineChart data={yearlyData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="0" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="ปี" tick={{fill: '#64748b', fontWeight: 'bold'}} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
-                    <Tooltip formatter={(val: number) => val.toLocaleString()} />
-                    <Legend 
-                      verticalAlign="top" align="right" layout="vertical" 
-                      wrapperStyle={{ paddingLeft: '20px', cursor: 'pointer' }}
-                      onClick={(data) => handleLegendClick(data as LegendItem)}
-                    />
-                    <Line hide={isHidden("ตาย")} name="ตาย" type="monotone" dataKey="ตาย" stroke="#ef4444" strokeWidth={3} />
-                    <Line hide={isHidden("ทุพพลภาพ")} name="ทุพพลภาพ" type="monotone" dataKey="ทุพพลภาพ" stroke="#1d4ed8" strokeWidth={3} />
-                    <Line hide={isHidden("สูญเสีย")} name="สูญเสียอวัยวะ" type="monotone" dataKey="สูญเสีย" stroke="#15803d" strokeWidth={3} />
-                    <Line hide={isHidden("หยุดงานเกิน3")} name="หยุดงาน > 3 วัน" type="monotone" dataKey="หยุดงานเกิน3" stroke="#f97316" strokeWidth={3} />
-                    <Line hide={isHidden("หยุดงานไม่เกิน3")} name="หยุดงาน ≤ 3 วัน" type="monotone" dataKey="หยุดงานไม่เกิน3" stroke="#7e22ce" strokeWidth={3} />
-                    <Line hide={isHidden("รวม")} name="รวม" type="monotone" dataKey="รวม" stroke="#0f172a" strokeWidth={4} />
-                  </LineChart>
-                ) : (
-                  <ComposedChart data={yearlyData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="0" vertical={false} stroke="#b4afaf" />
-                    <XAxis dataKey="ปี" />
-                    <YAxis axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(val: number) => val.toLocaleString()} />
-                    <Legend 
-                      verticalAlign="top" align="right" layout="vertical" 
-                      wrapperStyle={{ paddingLeft: '20px', cursor: 'pointer' }}
-                      onClick={(data) => handleLegendClick(data as LegendItem)}
-                    />
-                    <Bar hide={isHidden("หยุดงานไม่เกิน3")} name="หยุดงาน ≤ 3 วัน" dataKey="หยุดงานไม่เกิน3" stackId="a" fill="#00537a" />
-                    <Bar hide={isHidden("หยุดงานเกิน3")} name="หยุดงาน > 3 วัน" dataKey="หยุดงานเกิน3" stackId="a" fill="#1697a6" />
-                    <Bar hide={isHidden("สูญเสีย")} name="สูญเสียอวัยวะ" dataKey="สูญเสีย" stackId="a" fill="#0e606b" />
-                    <Bar hide={isHidden("ทุพพลภาพ")} name="ทุพพลภาพ" dataKey="ทุพพลภาพ" stackId="a" fill="#ffc24b" />
-                    <Bar hide={isHidden("ตาย")} name="ตาย" dataKey="ตาย" stackId="a" fill="#f47068" radius={[4, 4, 0, 0]} />
-                    <Line hide={isHidden("รวม")} name="รวม" type="monotone" dataKey="รวม" stroke="#0a2344" strokeWidth={4} />
-                  </ComposedChart>
-                )}
+                <ComposedChart data={yearlyData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="0" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="ปี" tick={{fill: '#64748b', fontWeight: 'bold'}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
+                  <Tooltip formatter={(val: number) => val.toLocaleString()} />
+                  <Legend 
+                    verticalAlign="top" align="right" layout="vertical" 
+                    wrapperStyle={{ paddingLeft: '20px', cursor: 'pointer' }}
+                    onClick={(data) => handleLegendClick(data as LegendItem)}
+                  />
+                  <Bar hide={isHidden("หยุดงานไม่เกิน3")} name="หยุดงาน ≤ 3 วัน" dataKey="หยุดงานไม่เกิน3" stackId="a" fill="#00537a" />
+                  <Bar hide={isHidden("หยุดงานเกิน3")} name="หยุดงาน > 3 วัน" dataKey="หยุดงานเกิน3" stackId="a" fill="#1697a6" />
+                  <Bar hide={isHidden("สูญเสีย")} name="สูญเสียอวัยวะ" dataKey="สูญเสีย" stackId="a" fill="#0e606b" />
+                  <Bar hide={isHidden("ทุพพลภาพ")} name="ทุพพลภาพ" dataKey="ทุพพลภาพ" stackId="a" fill="#ffc24b" />
+                  <Bar hide={isHidden("ตาย")} name="ตาย" dataKey="ตาย" stackId="a" fill="#f47068" radius={[4, 4, 0, 0]} />
+                  <Line hide={isHidden("รวม")} name="รวม" type="monotone" dataKey="รวม" stroke="#0a2344" strokeWidth={4} />
+                </ComposedChart>
               </ResponsiveContainer>
               <div className="absolute right-0 top-[180px] pr-4">
                 <button onClick={() => setSelectedSeries([])} className={`flex items-center gap-1.5 text-xs font-bold transition-all ${selectedSeries.length > 0 ? "text-red-500 opacity-100" : "opacity-0 pointer-events-none"}`}>
@@ -217,7 +185,7 @@ const Graph: React.FC = () => {
           </div>
         </section>
 
-        {/* --- Section: Table (FIXED NO SCROLL) --- */}
+        {/* --- Section: Table --- */}
         <section className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden">
           <div ref={tableRef} className="bg-white p-4 md:p-6 space-y-6">
             <div className="flex items-center gap-2">
@@ -255,7 +223,6 @@ const Graph: React.FC = () => {
             </div>
           </div>
 
-          {/* Table Buttons */}
           <div className="flex flex-wrap justify-center gap-4 py-8 bg-slate-50/50 border-t border-slate-100">
             <button onClick={() => handleExport('table', 'excel')} className="flex items-center gap-2 px-5 py-2 bg-emerald-100 text-emerald-800 rounded-xl font-bold text-xs"><FileSpreadsheet size={14} /> Export Table Excel</button>
             <button onClick={() => handleExport('table', 'png')} className="flex items-center gap-2 px-5 py-2 bg-blue-100 text-blue-800 rounded-xl font-bold text-xs"><FileImage size={14} /> Save Table Image</button>
