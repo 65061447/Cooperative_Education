@@ -48,15 +48,6 @@ const Header = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative hidden xl:block">
-            <Input 
-              type="search" 
-              placeholder="ค้นหาบริการหรือข้อมูล..." 
-              className="w-72 bg-gray-100 border-none rounded-md h-10 text-sm focus:ring-1 focus:ring-gray-300"
-            />
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          </div>
-          
           <Button className="bg-[#d4c391] hover:bg-[#c4b381] text-[#334e5e] font-bold h-11 px-6 text-base rounded-md shadow-sm flex items-center gap-2">
             <Lock className="h-4 w-4" />
             เข้าสู่ระบบผู้ประกันตน
@@ -97,7 +88,6 @@ const Header = () => {
       <div className="bg-[#334e5e] text-white">
         <div className="container mx-auto px-4">
           <nav className="flex items-center h-12 gap-7 overflow-x-auto [scrollbar-width:none]">
-            {/* Link to Home using React Router */}
             <Link to="/" className="hover:text-[#d4c391] transition-colors shrink-0">
               <Home className="h-5 w-5 fill-current" />
             </Link>
@@ -118,7 +108,6 @@ const Header = () => {
                         
                         <DropdownMenuPortal>
                           <DropdownMenuSubContent className="w-[420px] bg-white p-1 shadow-2xl border-slate-100">
-                            {/* LINK TO GRAPH ROUTE HERE */}
                             <DropdownMenuItem className="p-0">
                               <Link 
                                 to="/graph" 
@@ -128,7 +117,6 @@ const Header = () => {
                               </Link>
                             </DropdownMenuItem>
                             
-                            {/* Added Section 2 */}
                             <DropdownMenuItem className="p-0">
                               <Link 
                                 to="/graph2568" 
@@ -143,6 +131,30 @@ const Header = () => {
 
                       <DropdownMenuItem className="cursor-pointer py-3 text-[#334e5e] hover:bg-slate-50">
                         วารสารประกันสังคม
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              }
+
+              // --- Added dropdown for "หน่วยงาน" strictly as requested ---
+              if (link === "หน่วยงาน") {
+                return (
+                  <DropdownMenu key={link}>
+                    <DropdownMenuTrigger className="flex items-center gap-1 text-base font-semibold text-white/90 hover:text-[#d4c391] whitespace-nowrap outline-none shrink-0 transition-all">
+                      {link} <ChevronDown size={14} />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 bg-white shadow-xl">
+                      <DropdownMenuItem className="p-0">
+                        <Link 
+                          to="/emp" 
+                          className="w-full h-full py-3 px-4 text-[#334e5e] font-medium block hover:bg-slate-50 transition-colors"
+                        >
+                          บุคลากร
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer py-3 px-4 text-[#334e5e] hover:bg-slate-50">
+                        โครงสร้างองค์กร
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

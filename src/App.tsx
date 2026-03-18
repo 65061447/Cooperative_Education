@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Graph from "./pages/graph";
 import NotFound from "./pages/NotFound";
 import Graph2568 from "./pages/graph2568";
+import Emp from "./pages/Emp";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/graph" element={<Graph />} />
           <Route path="/graph2568" element={<Graph2568/>} />
+          <Route path="/emp" element={<Emp/>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
