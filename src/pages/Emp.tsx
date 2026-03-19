@@ -47,11 +47,15 @@ const Emp: React.FC = () => {
   const [searchName, setSearchName] = useState("");
   const [searchPosition, setSearchPosition] = useState("all");
   const [searchGen, setSearchGen] = useState("all");
+  const [searchDivision, setSearchDivision] = useState("all");
+  const [searchDepartment, setSearchDepartment] = useState("all");
 
   const [activeFilters, setActiveFilters] = useState({
     name: "",
     position: "all",
-    gen: "all"
+    gen: "all",
+    division: "all",
+    department: "all"
   });
   
   const [formData, setFormData] = useState<Employee>({
@@ -59,7 +63,7 @@ const Emp: React.FC = () => {
     Department: "", Division: "", Position: "", Entry_Date: ""
   });
 
-  // --- SAFE GENERATION LOGIC (FROM YOUR WORKING VERSION) ---
+  // --- SAFE GENERATION LOGIC ---
   const getGeneration = (birthday: string | number) => {
     if (!birthday || birthday === "0" || birthday === 0) return null;
     const str = birthday.toString();
@@ -81,7 +85,7 @@ const Emp: React.FC = () => {
     return { label: "Silent Gen", color: "bg-slate-50 text-slate-600 border-slate-100" };
   };
 
-  // --- SAFE FORMATTING LOGIC (FROM YOUR WORKING VERSION) ---
+  // --- SAFE FORMATTING LOGIC ---
   const formatToBEText = (dateVal: string | number) => {
     if (!dateVal || dateVal === "0" || dateVal === 0) return "-";
     const str = dateVal.toString();
@@ -100,7 +104,6 @@ const Emp: React.FC = () => {
     return str;
   };
 
-  // Helper for internal state storage
   const dateToADString = (date: Date | undefined): string => {
     if (!date) return "";
     const d = date.getDate().toString().padStart(2, '0');
@@ -127,29 +130,54 @@ const Emp: React.FC = () => {
   useEffect(() => { handleFetchData(); }, []);
 
   const handleSearch = () => {
-    setActiveFilters({ name: searchName, position: searchPosition, gen: searchGen });
+    setActiveFilters({ 
+      name: searchName, 
+      position: searchPosition, 
+      gen: searchGen,
+      division: searchDivision,
+      department: searchDepartment
+    });
   };
 
   const handleClearFilters = () => {
     setSearchName("");
     setSearchPosition("all");
     setSearchGen("all");
-    setActiveFilters({ name: "", position: "all", gen: "all" });
+    setSearchDivision("all");
+    setSearchDepartment("all");
+    setActiveFilters({ 
+      name: "", 
+      position: "all", 
+      gen: "all", 
+      division: "all", 
+      department: "all" 
+    });
   };
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
       const matchesName = emp.Name.toLowerCase().includes(activeFilters.name.toLowerCase());
       const matchesPosition = activeFilters.position === "all" || emp.Position === activeFilters.position;
+      const matchesDivision = activeFilters.division === "all" || emp.Division === activeFilters.division;
+      const matchesDepartment = activeFilters.department === "all" || emp.Department === activeFilters.department;
+      
       const genData = getGeneration(emp.Birthday);
       const matchesGen = activeFilters.gen === "all" || genData?.label === activeFilters.gen;
-      return matchesName && matchesPosition && matchesGen;
+      
+      return matchesName && matchesPosition && matchesGen && matchesDivision && matchesDepartment;
     });
   }, [employees, activeFilters]);
 
   const uniquePositions = useMemo(() => {
-    const positions = employees.map(emp => emp.Position).filter(pos => pos);
-    return Array.from(new Set(positions));
+    return Array.from(new Set(employees.map(emp => emp.Position).filter(Boolean)));
+  }, [employees]);
+
+  const uniqueDivisions = useMemo(() => {
+    return Array.from(new Set(employees.map(emp => emp.Division).filter(Boolean)));
+  }, [employees]);
+
+  const uniqueDepartments = useMemo(() => {
+    return Array.from(new Set(employees.map(emp => emp.Department).filter(Boolean)));
   }, [employees]);
 
   const handleOpenAdd = () => {
@@ -216,7 +244,7 @@ const Emp: React.FC = () => {
           
           <div className="flex gap-3">
             <Button onClick={handleFetchData} variant="outline" className="h-12 px-4 rounded-xl border-slate-200 bg-white" disabled={isLoading}>
-              รีเฟลชข้อมูล {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              รีเฟรชข้อมูล {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             </Button>
 
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -321,13 +349,14 @@ const Emp: React.FC = () => {
           </DialogContent>
         </Dialog>
 
+        {/* --- IMPROVED SEARCH BAR WITH DROPDOWNS --- */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
-                <User size={12} /> ค้นหาจากชื่อ
+                <User size={12} /> ค้นหาชื่อ
               </Label>
-              <Input placeholder="พิมพ์ชื่อพนักงาน..." className="h-11 border-slate-100 bg-slate-50/50 rounded-xl" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
+              <Input placeholder="พิมพ์ชื่อ..." className="h-11 rounded-xl" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
             </div>
 
             <div className="space-y-2">
@@ -335,45 +364,67 @@ const Emp: React.FC = () => {
                 <Briefcase size={12} /> ตำแหน่ง
               </Label>
               <Select value={searchPosition} onValueChange={setSearchPosition}>
-                <SelectTrigger className="h-11 border-slate-100 bg-slate-50/50 rounded-xl text-[#334e5e]">
-                  <SelectValue placeholder="ทุกตำแหน่ง" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ทุกตำแหน่ง" /></SelectTrigger>
+                <SelectContent>
                   <SelectItem value="all">ทุกตำแหน่ง</SelectItem>
-                  {uniquePositions.map((pos) => (
-                    <SelectItem key={pos} value={pos}>{pos}</SelectItem>
-                  ))}
+                  {uniquePositions.map((pos) => (<SelectItem key={pos} value={pos}>{pos}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
-                <Filter size={12} /> Generation
+                <MapPin size={12} /> ฝ่าย
+              </Label>
+              <Select value={searchDivision} onValueChange={setSearchDivision}>
+                <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ทุกฝ่าย" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทุกฝ่าย (Division)</SelectItem>
+                  {uniqueDivisions.map((div) => (<SelectItem key={div} value={div}>{div}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
+                <Building size={12} /> แผนก
+              </Label>
+              <Select value={searchDepartment} onValueChange={setSearchDepartment}>
+                <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ทุกแผนก" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทุกแผนก (Department)</SelectItem>
+                  {uniqueDepartments.map((dept) => (<SelectItem key={dept} value={dept}>{dept}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
+                <Filter size={12} /> Gen
               </Label>
               <Select value={searchGen} onValueChange={setSearchGen}>
-                <SelectTrigger className="h-11 border-slate-100 bg-slate-50/50 rounded-xl text-[#334e5e]">
-                  <SelectValue placeholder="ทุก Gen" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                  <SelectItem value="all">ทุก Gen</SelectItem>
+                <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ทุก Gen" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทุก Generation</SelectItem>
                   <SelectItem value="Gen Alpha">Gen Alpha</SelectItem>
                   <SelectItem value="Gen Z">Gen Z</SelectItem>
                   <SelectItem value="Gen Y">Gen Y</SelectItem>
                   <SelectItem value="Gen X">Gen X</SelectItem>
                   <SelectItem value="Baby Boomer">Baby Boomer</SelectItem>
-                  <SelectItem value="Silent Gen">Silent Gen</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <Button className="h-11 bg-[#334e5e] hover:bg-[#253945] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2" onClick={handleSearch}>
-              <Search size={18} /> ค้นหา
-            </Button>
-
-            <Button variant="ghost" className="h-11 text-slate-400 hover:text-rose-500 font-bold rounded-xl flex items-center justify-center gap-1" onClick={handleClearFilters}>
-              <X size={16} /> ล้างข้อมูล
-            </Button>
+            <div className="flex gap-2">
+              <Button className="h-11 bg-[#334e5e] text-white font-bold rounded-xl flex-1" onClick={handleSearch}><Search size={18} className="mr-2"/> ค้นหา</Button>
+              <Button 
+                 variant="outline" 
+                className="h-11 bg-rose-500 text-white hover:bg-white hover:text-rose-500 border-rose-500 font-bold rounded-xl flex items-center gap-1 px-4 transition-colors" 
+                onClick={handleClearFilters}
+                        >
+              <X size={16}/> ล้าง
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -405,10 +456,8 @@ const Emp: React.FC = () => {
                     <tr key={emp.id || idx} className="hover:bg-slate-50/30 transition-all group">
                       <td className="px-4 py-4 text-center font-black text-slate-300 text-xs">{idx + 1}</td>
                       <td className="px-6 py-4 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#d4c391]/10 flex items-center justify-center text-[#d4c391] group-hover:bg-[#d4c391] group-hover:text-white transition-all shadow-sm">
-                          <User size={20} />
-                        </div>
-                        <span className="font-bold text-[#334e5e] text-sm tracking-tight">{emp.Name}</span>
+                        <div className="w-10 h-10 rounded-xl bg-[#d4c391]/10 flex items-center justify-center text-[#d4c391]"><User size={20} /></div>
+                        <span className="font-bold text-[#334e5e] text-sm">{emp.Name}</span>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
@@ -442,10 +491,10 @@ const Emp: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(emp)} className="text-blue-500 hover:text-blue-700 hover:bg-blue-50">
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(emp)} className="text-blue-500 hover:bg-blue-50">
                             <Pencil size={16} />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} className="text-rose-500 hover:text-rose-700 hover:bg-rose-50">
+                          <Button variant="ghost" size="icon" onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} className="text-rose-500 hover:bg-rose-50">
                             <Trash2 size={16} />
                           </Button>
                         </div>
