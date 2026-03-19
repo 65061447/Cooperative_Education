@@ -27,30 +27,26 @@ interface Employee {
   id?: number;
   Name: string;
   Citizen_id: string | number;
-  Birthday: string | number;
+  Birthday: string; // Changed to string for "DD/MM/YYYY"
   Tel: string;
   Department: string;
   Division: string;
   Position: string;
-  Entry_Date: string | number;
+  Entry_Date: string; // Changed to string for "DD/MM/YYYY"
 }
 
 const Emp: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  
-  // --- New States for Edit/Delete ---
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
-  // --- UI Search States ---
   const [searchName, setSearchName] = useState("");
   const [searchPosition, setSearchPosition] = useState("all");
   const [searchGen, setSearchGen] = useState("all");
 
-  // --- Active Filter States ---
   const [activeFilters, setActiveFilters] = useState({
     name: "",
     position: "all",
@@ -62,11 +58,13 @@ const Emp: React.FC = () => {
     Department: "", Division: "", Position: "", Entry_Date: ""
   });
 
-  // --- Generation Logic ---
-  const getGeneration = (birthdayAD: string | number) => {
-    if (!birthdayAD || birthdayAD === 0) return null;
-    const str = birthdayAD.toString().replace(/[^0-9]/g, "").padStart(8, '0');
-    const year = parseInt(str.slice(-4)); 
+  // --- Generation Logic (Handles both old 18032026 and new 18/03/2026) ---
+  const getGeneration = (birthday: string | number) => {
+    if (!birthday) return null;
+    const str = birthday.toString();
+    const yearPart = str.includes("/") ? str.split("/").pop() : str.slice(-4);
+    const year = parseInt(yearPart || "");
+    
     if (isNaN(year) || year > 2100 || year < 1900) return null; 
 
     if (year >= 2013) return { label: "Gen Alpha", color: "bg-indigo-50 text-indigo-600 border-indigo-100" };
@@ -77,23 +75,26 @@ const Emp: React.FC = () => {
     return { label: "Silent Gen", color: "bg-slate-50 text-slate-600 border-slate-100" };
   };
 
-  // --- Helpers ---
-  const dateToADNumber = (date: Date | undefined): number => {
-    if (!date) return 0;
+  // --- Helpers for formatting ---
+  const dateToADString = (date: Date | undefined): string => {
+    if (!date) return "";
     const d = date.getDate().toString().padStart(2, '0');
     const m = (date.getMonth() + 1).toString().padStart(2, '0');
     const y = date.getFullYear().toString(); 
-    return parseInt(`${d}${m}${y}`);
+    return `${d}/${m}/${y}`;
   };
 
-  const formatADtoBEText = (num: string | number) => {
-    if (!num || num === 0) return "-";
-    const str = num.toString().replace(/[^0-9]/g, "").padStart(8, '0');
-    if (str.length < 8) return num.toString();
-    const day = str.slice(0, 2);
-    const month = str.slice(2, 4);
-    const yearAD = parseInt(str.slice(4));
-    const yearBE = yearAD + 543;
+  const formatToBEText = (dateStr: string) => {
+    if (!dateStr || dateStr === "" || dateStr === "0") return "-";
+    // If it's already "DD/MM/YYYY"
+    if (dateStr.includes("/")) {
+      const [d, m, y] = dateStr.split("/");
+      return `${d}/${m}/${parseInt(y) + 543}`;
+    }
+    // Fallback for old numeric data "DDMMYYYY"
+    const day = dateStr.slice(0, 2);
+    const month = dateStr.slice(2, 4);
+    const yearBE = parseInt(dateStr.slice(4)) + 543;
     return `${day}/${month}/${yearBE}`;
   };
 
@@ -105,11 +106,7 @@ const Emp: React.FC = () => {
         const data = await response.json();
         setEmployees(data);
       }
-    } catch (error) {
-      console.error("Fetch error:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (error) { console.error("Fetch error:", error); } finally { setIsLoading(false); }
   };
 
   useEffect(() => { handleFetchData(); }, []);
@@ -119,9 +116,7 @@ const Emp: React.FC = () => {
   };
 
   const handleClearFilters = () => {
-    setSearchName("");
-    setSearchPosition("all");
-    setSearchGen("all");
+    setSearchName(""); setSearchPosition("all"); setSearchGen("all");
     setActiveFilters({ name: "", position: "all", gen: "all" });
   };
 
@@ -158,8 +153,6 @@ const Emp: React.FC = () => {
     const payload = {
       ...formData,
       Citizen_id: formData.Citizen_id.toString().replace(/[^0-9]/g, ""),
-      Birthday: Number(formData.Birthday) || 0,
-      Entry_Date: Number(formData.Entry_Date) || 0,
     };
 
     try {
@@ -172,9 +165,7 @@ const Emp: React.FC = () => {
         setIsAddOpen(false);
         handleFetchData(); 
       }
-    } catch (error) {
-      console.error("Save error:", error);
-    }
+    } catch (error) { console.error("Save error:", error); }
   };
 
   const confirmDelete = async () => {
@@ -189,9 +180,7 @@ const Emp: React.FC = () => {
         setIsDeleteOpen(false);
         handleFetchData();
       }
-    } catch (error) {
-      console.error("Delete error:", error);
-    }
+    } catch (error) { console.error("Delete error:", error); }
   };
 
   return (
@@ -199,7 +188,6 @@ const Emp: React.FC = () => {
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">
         
-        {/* TOP BAR */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-black text-[#334e5e] flex items-center gap-3">
             <LayoutDashboard className="text-[#d4c391] w-8 h-8" /> 
@@ -208,7 +196,7 @@ const Emp: React.FC = () => {
           
           <div className="flex gap-3">
             <Button onClick={handleFetchData} variant="outline" className="h-12 px-4 rounded-xl border-slate-200 bg-white" disabled={isLoading}>
-              รีเฟลชข้อมูล {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              รีเฟรชข้อมูล {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             </Button>
 
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -244,11 +232,11 @@ const Emp: React.FC = () => {
                         <PopoverTrigger asChild>
                           <Button variant="outline" className="w-full h-12 justify-start border-slate-100 bg-slate-50/50 rounded-xl text-[#334e5e]">
                             <CalendarIcon className="mr-2 h-4 w-4 text-[#d4c391]" />
-                            {formatADtoBEText(formData.Birthday) === "-" ? "เลือกวันเกิด" : formatADtoBEText(formData.Birthday)}
+                            {formData.Birthday ? formatToBEText(formData.Birthday) : "เลือกวันเกิด"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0 rounded-xl border-none shadow-xl z-[110]" align="start">
-                          <Calendar mode="single" captionLayout="dropdown" onSelect={(date) => setFormData({...formData, Birthday: dateToADNumber(date)})} />
+                          <Calendar mode="single" captionLayout="dropdown" onSelect={(date) => setFormData({...formData, Birthday: dateToADString(date)})} />
                         </PopoverContent>
                       </Popover>
                     </div>
@@ -280,11 +268,11 @@ const Emp: React.FC = () => {
                         <PopoverTrigger asChild>
                           <Button variant="outline" className="w-full h-12 justify-start border-slate-100 bg-slate-50/50 rounded-xl text-[#334e5e]">
                             <CalendarIcon className="mr-2 h-4 w-4 text-[#d4c391]" />
-                            {formatADtoBEText(formData.Entry_Date) === "-" ? "เลือกวันเริ่มงาน" : formatADtoBEText(formData.Entry_Date)}
+                            {formData.Entry_Date ? formatToBEText(formData.Entry_Date) : "เลือกวันเริ่มงาน"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0 rounded-xl border-none shadow-xl z-[110]" align="start">
-                          <Calendar mode="single" captionLayout="dropdown" onSelect={(date) => setFormData({...formData, Entry_Date: dateToADNumber(date)})} />
+                          <Calendar mode="single" captionLayout="dropdown" onSelect={(date) => setFormData({...formData, Entry_Date: dateToADString(date)})} />
                         </PopoverContent>
                       </Popover>
                     </div>
@@ -301,7 +289,6 @@ const Emp: React.FC = () => {
           </div>
         </div>
 
-        {/* DELETE CONFIRMATION */}
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
           <DialogContent className="sm:max-w-[400px] p-8 rounded-[2rem] text-center">
             <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><AlertCircle size={32} /></div>
@@ -314,41 +301,26 @@ const Emp: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* --- MANUAL SEARCH BAR --- */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
-                <User size={12} /> ค้นหาจากชื่อ
-              </Label>
+              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1"><User size={12} /> ค้นหาจากชื่อ</Label>
               <Input placeholder="พิมพ์ชื่อพนักงาน..." className="h-11 border-slate-100 bg-slate-50/50 rounded-xl" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
             </div>
-
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
-                <Briefcase size={12} /> ตำแหน่ง
-              </Label>
+              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1"><Briefcase size={12} /> ตำแหน่ง</Label>
               <Select value={searchPosition} onValueChange={setSearchPosition}>
-                <SelectTrigger className="h-11 border-slate-100 bg-slate-50/50 rounded-xl text-[#334e5e]">
-                  <SelectValue placeholder="ทุกตำแหน่ง" />
-                </SelectTrigger>
+                <SelectTrigger className="h-11 border-slate-100 bg-slate-50/50 rounded-xl text-[#334e5e]"><SelectValue placeholder="ทุกตำแหน่ง" /></SelectTrigger>
                 <SelectContent className="rounded-xl border-slate-100 shadow-xl">
                   <SelectItem value="all">ทุกตำแหน่ง</SelectItem>
-                  {uniquePositions.map((pos) => (
-                    <SelectItem key={pos} value={pos}>{pos}</SelectItem>
-                  ))}
+                  {uniquePositions.map((pos) => (<SelectItem key={pos} value={pos}>{pos}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
-                <Filter size={12} /> Generation
-              </Label>
+              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1"><Filter size={12} /> Generation</Label>
               <Select value={searchGen} onValueChange={setSearchGen}>
-                <SelectTrigger className="h-11 border-slate-100 bg-slate-50/50 rounded-xl text-[#334e5e]">
-                  <SelectValue placeholder="ทุก Gen" />
-                </SelectTrigger>
+                <SelectTrigger className="h-11 border-slate-100 bg-slate-50/50 rounded-xl text-[#334e5e]"><SelectValue placeholder="ทุก Gen" /></SelectTrigger>
                 <SelectContent className="rounded-xl border-slate-100 shadow-xl">
                   <SelectItem value="all">ทุก Gen</SelectItem>
                   <SelectItem value="Gen Alpha">Gen Alpha</SelectItem>
@@ -360,22 +332,16 @@ const Emp: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-
-            <Button className="h-11 bg-[#334e5e] hover:bg-[#253945] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2" onClick={handleSearch}>
-              <Search size={18} /> ค้นหา
-            </Button>
-
-            <Button variant="ghost" className="h-11 text-slate-400 hover:text-rose-500 font-bold rounded-xl flex items-center justify-center gap-1" onClick={handleClearFilters}>
-              <X size={16} /> ล้างข้อมูล
-            </Button>
+            <Button className="h-11 bg-[#334e5e] hover:bg-[#253945] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2" onClick={handleSearch}><Search size={18} /> ค้นหา</Button>
+            <Button variant="ghost" className="h-11 text-slate-400 hover:text-rose-500 font-bold rounded-xl flex items-center justify-center gap-1" onClick={handleClearFilters}><X size={16} /> ล้างข้อมูล</Button>
           </div>
         </div>
 
-        {/* --- FULL DATA TABLE --- */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead className="bg-slate-50/50 text-[#334e5e] text-[10px] font-black uppercase tracking-widest">
               <tr>
+                <th className="px-4 py-5 text-center">No.</th>
                 <th className="px-6 py-5">Employee Info</th>
                 <th className="px-6 py-5 text-center">Citizen ID</th>
                 <th className="px-6 py-5">Position & Org</th>
@@ -387,31 +353,22 @@ const Emp: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredEmployees.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-slate-400 font-medium italic">
-                    ไม่พบข้อมูลที่ตรงกับการค้นหา
-                  </td>
-                </tr>
+                <tr><td colSpan={8} className="px-6 py-10 text-center text-slate-400 font-medium italic">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>
               ) : (
                 filteredEmployees.map((emp, idx) => {
                   const gen = getGeneration(emp.Birthday);
                   return (
-                    <tr key={idx} className="hover:bg-slate-50/30 transition-all group">
+                    <tr key={emp.id || idx} className="hover:bg-slate-50/30 transition-all group">
+                      <td className="px-4 py-4 text-center font-black text-slate-300 text-xs">{idx + 1}</td>
                       <td className="px-6 py-4 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#d4c391]/10 flex items-center justify-center text-[#d4c391] group-hover:bg-[#d4c391] group-hover:text-white transition-all shadow-sm">
-                          <User size={20} />
-                        </div>
+                        <div className="w-10 h-10 rounded-xl bg-[#d4c391]/10 flex items-center justify-center text-[#d4c391] group-hover:bg-[#d4c391] group-hover:text-white transition-all shadow-sm"><User size={20} /></div>
                         <span className="font-bold text-[#334e5e] text-sm tracking-tight">{emp.Name}</span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-                          {emp.Citizen_id || "-"}
-                        </span>
+                        <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">{emp.Citizen_id || "-"}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-bold text-slate-600 flex items-center gap-1.5">
-                          <Briefcase size={12} className="text-[#d4c391]" /> {emp.Position}
-                        </div>
+                        <div className="text-sm font-bold text-slate-600 flex items-center gap-1.5"><Briefcase size={12} className="text-[#d4c391]" /> {emp.Position}</div>
                         <div className="text-[10px] text-slate-400 uppercase font-black mt-0.5 flex flex-wrap gap-2">
                           <span className="flex items-center gap-1"><Building size={10} /> {emp.Department}</span>
                           <span className="flex items-center gap-1"><MapPin size={10} /> {emp.Division}</span>
@@ -419,28 +376,18 @@ const Emp: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center gap-1">
-                          <span className="text-xs font-bold text-slate-500">{formatADtoBEText(emp.Birthday)}</span>
-                          {gen && (
-                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border uppercase tracking-tighter ${gen.color}`}>
-                              {gen.label}
-                            </span>
-                          )}
+                          <span className="text-xs font-bold text-slate-500">{formatToBEText(emp.Birthday)}</span>
+                          {gen && <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border uppercase tracking-tighter ${gen.color}`}>{gen.label}</span>}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center text-xs font-black text-slate-600">{emp.Tel}</td>
                       <td className="px-6 py-4 text-right">
-                         <span className="text-xs font-black text-[#d4c391] bg-[#d4c391]/5 px-3 py-1.5 rounded-lg border border-[#d4c391]/20">
-                           {formatADtoBEText(emp.Entry_Date)}
-                         </span>
+                         <span className="text-xs font-black text-[#d4c391] bg-[#d4c391]/5 px-3 py-1.5 rounded-lg border border-[#d4c391]/20">{formatToBEText(emp.Entry_Date)}</span>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(emp)} className="text-blue-500 hover:text-blue-700 hover:bg-blue-50">
-                            <Pencil size={16} />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} className="text-rose-500 hover:text-rose-700 hover:bg-rose-50">
-                            <Trash2 size={16} />
-                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(emp)} className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"><Pencil size={16} /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} className="text-rose-500 hover:text-rose-700 hover:bg-rose-50"><Trash2 size={16} /></Button>
                         </div>
                       </td>
                     </tr>
@@ -450,7 +397,6 @@ const Emp: React.FC = () => {
             </tbody>
           </table>
         </div>
-
       </main>
       <Footer />
     </div>
