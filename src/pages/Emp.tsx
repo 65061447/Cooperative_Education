@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { 
   LayoutDashboard, PlusCircle, Calendar as CalendarIcon, Phone, 
   CreditCard, Briefcase, RefreshCw, Loader2, User, Save, MapPin, Building,
-  Search, Filter, X
+  Search, Filter, X, Pencil, Trash2, AlertCircle
 } from "lucide-react";
 
 import Header from "@/components/Header";
@@ -40,12 +40,17 @@ const Emp: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   
-  // --- UI Search States (What the user sees/types) ---
+  // --- New States for Edit/Delete ---
+  const [isEditing, setIsEditing] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+
+  // --- UI Search States ---
   const [searchName, setSearchName] = useState("");
   const [searchPosition, setSearchPosition] = useState("all");
   const [searchGen, setSearchGen] = useState("all");
 
-  // --- Active Filter States (What the table actually uses) ---
+  // --- Active Filter States ---
   const [activeFilters, setActiveFilters] = useState({
     name: "",
     position: "all",
@@ -57,7 +62,7 @@ const Emp: React.FC = () => {
     Department: "", Division: "", Position: "", Entry_Date: ""
   });
 
-  // --- Generation Logic (A.D. from DB) ---
+  // --- Generation Logic ---
   const getGeneration = (birthdayAD: string | number) => {
     if (!birthdayAD || birthdayAD === 0) return null;
     const str = birthdayAD.toString().replace(/[^0-9]/g, "").padStart(8, '0');
@@ -72,7 +77,7 @@ const Emp: React.FC = () => {
     return { label: "Silent Gen", color: "bg-slate-50 text-slate-600 border-slate-100" };
   };
 
-  // --- Helpers for Database Sync ---
+  // --- Helpers ---
   const dateToADNumber = (date: Date | undefined): number => {
     if (!date) return 0;
     const d = date.getDate().toString().padStart(2, '0');
@@ -109,13 +114,8 @@ const Emp: React.FC = () => {
 
   useEffect(() => { handleFetchData(); }, []);
 
-  // --- MANUAL SEARCH TRIGGER ---
   const handleSearch = () => {
-    setActiveFilters({
-      name: searchName,
-      position: searchPosition,
-      gen: searchGen
-    });
+    setActiveFilters({ name: searchName, position: searchPosition, gen: searchGen });
   };
 
   const handleClearFilters = () => {
@@ -125,15 +125,12 @@ const Emp: React.FC = () => {
     setActiveFilters({ name: "", position: "all", gen: "all" });
   };
 
-  // --- Filtering Logic (Now uses activeFilters) ---
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
       const matchesName = emp.Name.toLowerCase().includes(activeFilters.name.toLowerCase());
       const matchesPosition = activeFilters.position === "all" || emp.Position === activeFilters.position;
-      
       const genData = getGeneration(emp.Birthday);
       const matchesGen = activeFilters.gen === "all" || genData?.label === activeFilters.gen;
-
       return matchesName && matchesPosition && matchesGen;
     });
   }, [employees, activeFilters]);
@@ -143,7 +140,21 @@ const Emp: React.FC = () => {
     return Array.from(new Set(positions));
   }, [employees]);
 
-  const handleAddEmployee = async () => {
+  // --- CRUD Handlers ---
+  const handleOpenAdd = () => {
+    setIsEditing(false);
+    setFormData({ Name: "", Citizen_id: "", Birthday: "", Tel: "", Department: "", Division: "", Position: "", Entry_Date: "" });
+    setIsAddOpen(true);
+  };
+
+  const handleOpenEdit = (emp: Employee) => {
+    setIsEditing(true);
+    setFormData(emp);
+    setIsAddOpen(true);
+  };
+
+  const handleSaveEmployee = async () => {
+    const endpoint = isEditing ? "update" : "add";
     const payload = {
       ...formData,
       Citizen_id: formData.Citizen_id.toString().replace(/[^0-9]/g, ""),
@@ -152,7 +163,7 @@ const Emp: React.FC = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:3000/employees/add", {
+      const response = await fetch(`http://localhost:3000/employees/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -160,10 +171,26 @@ const Emp: React.FC = () => {
       if (response.ok) {
         setIsAddOpen(false);
         handleFetchData(); 
-        setFormData({ Name: "", Citizen_id: "", Birthday: "", Tel: "", Department: "", Division: "", Position: "", Entry_Date: "" });
       }
     } catch (error) {
-      console.error("Add error:", error);
+      console.error("Save error:", error);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedEmployee?.id) return;
+    try {
+      const response = await fetch("http://localhost:3000/employees/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: selectedEmployee.id }),
+      });
+      if (response.ok) {
+        setIsDeleteOpen(false);
+        handleFetchData();
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
     }
   };
 
@@ -180,20 +207,19 @@ const Emp: React.FC = () => {
           </h1>
           
           <div className="flex gap-3">
-            <Button onClick={handleFetchData} variant="outline" className="h-12 px-4 rounded-xl border-slate-200 bg-white" disabled={isLoading}>รีเฟลชข้อมูล
-              {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            <Button onClick={handleFetchData} variant="outline" className="h-12 px-4 rounded-xl border-slate-200 bg-white" disabled={isLoading}>
+              รีเฟลชข้อมูล {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             </Button>
 
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-[#d4c391] hover:bg-[#c6b47e] text-[#334e5e] font-bold h-12 px-6 rounded-xl shadow-lg transition-transform active:scale-95">
-                  <PlusCircle className="mr-2" /> เพิ่มบุคลากรใหม่
-                </Button>
-              </DialogTrigger>
+              <Button onClick={handleOpenAdd} className="bg-[#d4c391] hover:bg-[#c6b47e] text-[#334e5e] font-bold h-12 px-6 rounded-xl shadow-lg transition-transform active:scale-95">
+                <PlusCircle className="mr-2" /> เพิ่มบุคลากรใหม่
+              </Button>
               <DialogContent className="sm:max-w-[700px] max-h-[90vh] bg-white rounded-3xl p-0 flex flex-col border-none shadow-2xl overflow-hidden">
                 <div className="bg-[#334e5e] p-6 text-white shrink-0">
                   <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                    <PlusCircle className="text-[#d4c391]" /> เพิ่มข้อมูลพนักงานใหม่
+                    {isEditing ? <Pencil className="text-[#d4c391]" /> : <PlusCircle className="text-[#d4c391]" />}
+                    {isEditing ? "แก้ไขข้อมูลพนักงาน" : "เพิ่มข้อมูลพนักงานใหม่"}
                   </DialogTitle>
                 </div>
                 <div className="p-8 space-y-6 overflow-y-auto flex-grow custom-scrollbar">
@@ -266,7 +292,7 @@ const Emp: React.FC = () => {
                 </div>
                 <div className="p-6 bg-slate-50 border-t flex gap-3 shrink-0">
                   <Button variant="ghost" onClick={()=>setIsAddOpen(false)} className="flex-1 h-12 font-bold text-slate-400">ยกเลิก</Button>
-                  <Button onClick={handleAddEmployee} className="bg-[#334e5e] hover:bg-[#253945] text-white flex-[2] h-12 font-bold rounded-xl shadow-lg flex items-center justify-center gap-2">
+                  <Button onClick={handleSaveEmployee} className="bg-[#334e5e] hover:bg-[#253945] text-white flex-[2] h-12 font-bold rounded-xl shadow-lg flex items-center justify-center gap-2">
                     <Save size={18} /> บันทึกข้อมูล
                   </Button>
                 </div>
@@ -275,6 +301,19 @@ const Emp: React.FC = () => {
           </div>
         </div>
 
+        {/* DELETE CONFIRMATION */}
+        <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+          <DialogContent className="sm:max-w-[400px] p-8 rounded-[2rem] text-center">
+            <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><AlertCircle size={32} /></div>
+            <DialogTitle className="text-xl font-bold text-[#334e5e] mb-2">ยืนยันการลบข้อมูล?</DialogTitle>
+            <p className="text-sm text-slate-400 mb-6">คุณแน่ใจว่าต้องการลบข้อมูลของ <span className="font-black">{selectedEmployee?.Name}</span></p>
+            <div className="flex gap-3">
+              <Button variant="ghost" onClick={()=>setIsDeleteOpen(false)} className="flex-1">ยกเลิก</Button>
+              <Button onClick={confirmDelete} className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl">ยืนยันลบ</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* --- MANUAL SEARCH BAR --- */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
@@ -282,12 +321,7 @@ const Emp: React.FC = () => {
               <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
                 <User size={12} /> ค้นหาจากชื่อ
               </Label>
-              <Input 
-                placeholder="พิมพ์ชื่อพนักงาน..." 
-                className="h-11 border-slate-100 bg-slate-50/50 rounded-xl"
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-              />
+              <Input placeholder="พิมพ์ชื่อพนักงาน..." className="h-11 border-slate-100 bg-slate-50/50 rounded-xl" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
             </div>
 
             <div className="space-y-2">
@@ -327,20 +361,11 @@ const Emp: React.FC = () => {
               </Select>
             </div>
 
-            {/* ค้นหา Button (Manual Trigger) */}
-            <Button 
-              className="h-11 bg-[#334e5e] hover:bg-[#253945] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2"
-              onClick={handleSearch}
-            >
+            <Button className="h-11 bg-[#334e5e] hover:bg-[#253945] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2" onClick={handleSearch}>
               <Search size={18} /> ค้นหา
             </Button>
 
-            {/* Clear Button */}
-            <Button 
-              variant="ghost"
-              className="h-11 text-slate-400 hover:text-rose-500 font-bold rounded-xl flex items-center justify-center gap-1"
-              onClick={handleClearFilters}
-            >
+            <Button variant="ghost" className="h-11 text-slate-400 hover:text-rose-500 font-bold rounded-xl flex items-center justify-center gap-1" onClick={handleClearFilters}>
               <X size={16} /> ล้างข้อมูล
             </Button>
           </div>
@@ -357,12 +382,13 @@ const Emp: React.FC = () => {
                 <th className="px-6 py-5 text-center">Birthday & Gen</th>
                 <th className="px-6 py-5 text-center">Contact</th>
                 <th className="px-6 py-5 text-right">Start Date</th>
+                <th className="px-6 py-5 text-center">Manage</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-400 font-medium italic">
+                  <td colSpan={7} className="px-6 py-10 text-center text-slate-400 font-medium italic">
                     ไม่พบข้อมูลที่ตรงกับการค้นหา
                   </td>
                 </tr>
@@ -406,6 +432,16 @@ const Emp: React.FC = () => {
                          <span className="text-xs font-black text-[#d4c391] bg-[#d4c391]/5 px-3 py-1.5 rounded-lg border border-[#d4c391]/20">
                            {formatADtoBEText(emp.Entry_Date)}
                          </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex justify-center gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(emp)} className="text-blue-500 hover:text-blue-700 hover:bg-blue-50">
+                            <Pencil size={16} />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} className="text-rose-500 hover:text-rose-700 hover:bg-rose-50">
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );

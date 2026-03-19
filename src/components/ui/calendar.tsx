@@ -42,6 +42,15 @@ function Calendar({
         selected: "bg-[#334e5e] text-white hover:bg-[#334e5e]",
       }}
       formatters={{
+        // FIX: The static label display (e.g. March 2569)
+        formatCaption: (date, options) => {
+          const month = date.toLocaleString(options?.locale?.code || "default", { month: "long" });
+          return `${month} ${date.getFullYear() + 543}`;
+        },
+        // FIX: The text inside the Year dropdown button
+        formatYearDropdown: (date) => {
+          return (date.getFullYear() + 543).toString();
+        },
         formatMonthDropdown: (date) =>
           date.toLocaleString("default", { month: "short" }),
         ...formatters,
