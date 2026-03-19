@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { 
   LayoutDashboard, PlusCircle, Calendar as CalendarIcon, Phone, 
   CreditCard, Briefcase, RefreshCw, Loader2, User, Save, MapPin, Building,
-  Search, Filter, X, Pencil, Trash2, AlertCircle
+  Search, Filter, X, Pencil, Trash2, AlertCircle, ArrowUpDown, ChevronUp, ChevronDown
 } from "lucide-react";
 
 import Header from "@/components/Header";
@@ -63,6 +63,20 @@ const Emp: React.FC = () => {
     Department: "", Division: "", Position: "", Entry_Date: ""
   });
 
+  // --- SORTING STATE ---
+  const [sortConfig, setSortConfig] = useState<{ key: 'Entry_Date' | 'Gen' | 'id', direction: 'asc' | 'desc' }>({
+    key: 'id',
+    direction: 'asc'
+  });
+
+  const handleSort = (key: 'Entry_Date' | 'Gen') => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
   // --- SAFE GENERATION LOGIC ---
   const getGeneration = (birthday: string | number) => {
     if (!birthday || birthday === "0" || birthday === 0) return null;
@@ -77,12 +91,12 @@ const Emp: React.FC = () => {
     
     if (isNaN(year) || year > 2100 || year < 1900) return null; 
 
-    if (year >= 2013) return { label: "Gen Alpha", color: "bg-indigo-50 text-indigo-600 border-indigo-100" };
-    if (year >= 1997) return { label: "Gen Z", color: "bg-emerald-50 text-emerald-600 border-emerald-100" };
-    if (year >= 1981) return { label: "Gen Y", color: "bg-sky-50 text-sky-600 border-sky-100" };
-    if (year >= 1965) return { label: "Gen X", color: "bg-orange-50 text-orange-600 border-orange-100" };
-    if (year >= 1946) return { label: "Baby Boomer", color: "bg-rose-50 text-rose-600 border-rose-100" };
-    return { label: "Silent Gen", color: "bg-slate-50 text-slate-600 border-slate-100" };
+    if (year >= 2013) return { label: "Gen Alpha", color: "bg-indigo-50 text-indigo-600 border-indigo-100", rank: 6 };
+    if (year >= 1997) return { label: "Gen Z", color: "bg-emerald-50 text-emerald-600 border-emerald-100", rank: 5 };
+    if (year >= 1981) return { label: "Gen Y", color: "bg-sky-50 text-sky-600 border-sky-100", rank: 4 };
+    if (year >= 1965) return { label: "Gen X", color: "bg-orange-50 text-orange-600 border-orange-100", rank: 3 };
+    if (year >= 1946) return { label: "Baby Boomer", color: "bg-rose-50 text-rose-600 border-rose-100", rank: 2 };
+    return { label: "Silent Gen", color: "bg-slate-50 text-slate-600 border-slate-100", rank: 1 };
   };
 
   // --- SAFE FORMATTING LOGIC ---
@@ -152,10 +166,14 @@ const Emp: React.FC = () => {
       division: "all", 
       department: "all" 
     });
+    setSortConfig({
+      key: 'id',
+      direction: 'asc'
+    });
   };
 
   const filteredEmployees = useMemo(() => {
-    return employees.filter((emp) => {
+    const filtered = employees.filter((emp) => {
       const matchesName = emp.Name.toLowerCase().includes(activeFilters.name.toLowerCase());
       const matchesPosition = activeFilters.position === "all" || emp.Position === activeFilters.position;
       const matchesDivision = activeFilters.division === "all" || emp.Division === activeFilters.division;
@@ -166,7 +184,29 @@ const Emp: React.FC = () => {
       
       return matchesName && matchesPosition && matchesGen && matchesDivision && matchesDepartment;
     });
-  }, [employees, activeFilters]);
+
+    return [...filtered].sort((a, b) => {
+      if (sortConfig.key === 'Entry_Date') {
+        const parseDate = (dateStr: string | number) => {
+          if (!dateStr) return 0;
+          const parts = dateStr.toString().split("/");
+          if (parts.length !== 3) return 0;
+          return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])).getTime();
+        };
+        const dateA = parseDate(a.Entry_Date);
+        const dateB = parseDate(b.Entry_Date);
+        return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
+      } else if (sortConfig.key === 'Gen') {
+        const rankA = getGeneration(a.Birthday)?.rank || 0;
+        const rankB = getGeneration(b.Birthday)?.rank || 0;
+        return sortConfig.direction === 'asc' ? rankA - rankB : rankB - rankA;
+      } else {
+        const idA = a.id || 0;
+        const idB = b.id || 0;
+        return sortConfig.direction === 'asc' ? idA - idB : idB - idA;
+      }
+    });
+  }, [employees, activeFilters, sortConfig]);
 
   const uniquePositions = useMemo(() => {
     return Array.from(new Set(employees.map(emp => emp.Position).filter(Boolean)));
@@ -349,7 +389,7 @@ const Emp: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* --- IMPROVED SEARCH BAR WITH DROPDOWNS --- */}
+        {/* --- SEARCH BAR --- */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
             <div className="space-y-2">
@@ -416,13 +456,13 @@ const Emp: React.FC = () => {
             </div>
 
             <div className="flex gap-2">
-              <Button className="h-11 bg-[#334e5e] text-white font-bold rounded-xl flex-1" onClick={handleSearch}><Search size={18} className="mr-2"/> ค้นหา</Button>
+              <Button className="h-11 bg-[#334e5e] text-white font-bold rounded-xl flex-1 hover:bg-[#253945]" onClick={handleSearch}><Search size={18} className="mr-2"/> ค้นหา</Button>
               <Button 
-                 variant="outline" 
+                variant="outline" 
                 className="h-11 bg-rose-500 text-white hover:bg-white hover:text-rose-500 border-rose-500 font-bold rounded-xl flex items-center gap-1 px-4 transition-colors" 
                 onClick={handleClearFilters}
-                        >
-              <X size={16}/> ล้าง
+              >
+                <X size={16}/> ล้าง
               </Button>
             </div>
           </div>
@@ -433,22 +473,32 @@ const Emp: React.FC = () => {
             <thead className="bg-slate-50/50 text-[#334e5e] text-[10px] font-black uppercase tracking-widest">
               <tr>
                 <th className="px-4 py-5 text-center">No.</th>
-                <th className="px-6 py-5">Employee Info</th>
-                <th className="px-6 py-5 text-center">Citizen ID</th>
-                <th className="px-6 py-5">Position & Org</th>
-                <th className="px-6 py-5 text-center">Birthday & Gen</th>
-                <th className="px-6 py-5 text-center">Contact</th>
-                <th className="px-6 py-5 text-right">Start Date</th>
+                <th className="px-6 py-5">ชื่อ</th>
+                <th className="px-6 py-5 text-center">เลขบัตรประชาชน</th>
+                <th className="px-6 py-5">ตำแหน่งงาน/แผนก</th>
+                <th 
+                  className="px-6 py-5 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => handleSort('Gen')}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    วันเกิด {sortConfig.key === 'Gen' ? (sortConfig.direction === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>) : <ArrowUpDown size={12}/>}
+                  </div>
+                </th>
+                <th className="px-6 py-5 text-center">เบอร์โทรศัพท์</th>
+                <th 
+                  className="px-6 py-5 text-right cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => handleSort('Entry_Date')}
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    วันที่เริ่มเข้าทำงาน {sortConfig.key === 'Entry_Date' ? (sortConfig.direction === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>) : <ArrowUpDown size={12}/>}
+                  </div>
+                </th>
                 <th className="px-6 py-5 text-center">Manage</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredEmployees.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-10 text-center text-slate-400 font-medium italic">
-                    ไม่พบข้อมูลที่ตรงกับการค้นหา
-                  </td>
-                </tr>
+                <tr><td colSpan={8} className="px-6 py-10 text-center text-slate-400 font-medium italic">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>
               ) : (
                 filteredEmployees.map((emp, idx) => {
                   const gen = getGeneration(emp.Birthday);
@@ -457,17 +507,13 @@ const Emp: React.FC = () => {
                       <td className="px-4 py-4 text-center font-black text-slate-300 text-xs">{idx + 1}</td>
                       <td className="px-6 py-4 flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-[#d4c391]/10 flex items-center justify-center text-[#d4c391]"><User size={20} /></div>
-                        <span className="font-bold text-[#334e5e] text-sm">{emp.Name}</span>
+                        <button onClick={() => handleOpenEdit(emp)} className="font-bold text-[#334e5e] text-sm hover:text-[#d4c391] transition-colors text-left">{emp.Name}</button>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-                          {emp.Citizen_id || "-"}
-                        </span>
+                        <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">{emp.Citizen_id || "-"}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-bold text-slate-600 flex items-center gap-1.5">
-                          <Briefcase size={12} className="text-[#d4c391]" /> {emp.Position}
-                        </div>
+                        <div className="text-sm font-bold text-slate-600 flex items-center gap-1.5"><Briefcase size={12} className="text-[#d4c391]" /> {emp.Position}</div>
                         <div className="text-[10px] text-slate-400 uppercase font-black mt-0.5 flex flex-wrap gap-2">
                           <span className="flex items-center gap-1"><Building size={10} /> {emp.Department}</span>
                           <span className="flex items-center gap-1"><MapPin size={10} /> {emp.Division}</span>
@@ -476,27 +522,17 @@ const Emp: React.FC = () => {
                       <td className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className="text-xs font-bold text-slate-500">{formatToBEText(emp.Birthday)}</span>
-                          {gen && (
-                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border uppercase tracking-tighter ${gen.color}`}>
-                              {gen.label}
-                            </span>
-                          )}
+                          {gen && <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border uppercase tracking-tighter ${gen.color}`}>{gen.label}</span>}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center text-xs font-black text-slate-600">{emp.Tel}</td>
                       <td className="px-6 py-4 text-right">
-                         <span className="text-xs font-black text-[#d4c391] bg-[#d4c391]/5 px-3 py-1.5 rounded-lg border border-[#d4c391]/20">
-                           {formatToBEText(emp.Entry_Date)}
-                         </span>
+                         <span className="text-xs font-black text-[#d4c391] bg-[#d4c391]/5 px-3 py-1.5 rounded-lg border border-[#d4c391]/20">{formatToBEText(emp.Entry_Date)}</span>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(emp)} className="text-blue-500 hover:bg-blue-50">
-                            <Pencil size={16} />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} className="text-rose-500 hover:bg-rose-50">
-                            <Trash2 size={16} />
-                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(emp)} className="text-blue-500 hover:bg-blue-50"><Pencil size={16} /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} className="text-rose-500 hover:bg-rose-50"><Trash2 size={16} /></Button>
                         </div>
                       </td>
                     </tr>
