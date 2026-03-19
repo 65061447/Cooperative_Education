@@ -55,3 +55,15 @@ app.get('/employees/single', async (req: Request, res: Response) => {
     res.status(404).json({ error: "Employee not found" });
   }
 });
+
+app.post('/employees/add', async (req: Request, res: Response) => {
+  const db = await openDb();
+  const { Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date } = req.body;
+
+  const sql = `INSERT INTO Employee (Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+  await db.run(sql, [Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date]);
+
+  res.status(201).json({ message: "Success!" });
+});

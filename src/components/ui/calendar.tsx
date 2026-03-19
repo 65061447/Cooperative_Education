@@ -1,54 +1,111 @@
-import * as React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker } from "react-day-picker";
+"use client"
 
-import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
+import * as React from "react"
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "lucide-react"
+import {
+  DayButton,
+  DayPicker,
+  getDefaultClassNames,
+  type DayPickerProps,
+} from "react-day-picker"
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>;
+import { cn } from "@/lib/utils"
+import { Button, buttonVariants } from "@/components/ui/button"
 
-function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
+export type CalendarProps = DayPickerProps & {
+  buttonVariant?: React.ComponentProps<typeof Button>["variant"]
+}
+
+function Calendar({
+  className,
+  classNames,
+  showOutsideDays = true,
+  buttonVariant = "ghost",
+  formatters,
+  components,
+  ...props
+}: CalendarProps) {
+  const defaultClassNames = getDefaultClassNames()
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
+      className={cn(
+        "bg-background group/calendar p-3 [--cell-size:2rem]",
+        className
+      )}
+      modifiersClassNames={{
+        selected: "bg-[#334e5e] text-white hover:bg-[#334e5e]",
+      }}
+      formatters={{
+        formatMonthDropdown: (date) =>
+          date.toLocaleString("default", { month: "short" }),
+        ...formatters,
+      }}
       classNames={{
-        months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-        month: "space-y-4",
-        caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
-        nav: "space-x-1 flex items-center",
-        nav_button: cn(
-          buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-        ),
-        nav_button_previous: "absolute left-1",
-        nav_button_next: "absolute right-1",
-        table: "w-full border-collapse space-y-1",
-        head_row: "flex",
-        head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
-        row: "flex w-full mt-2",
-        cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-        day: cn(buttonVariants({ variant: "ghost" }), "h-9 w-9 p-0 font-normal aria-selected:opacity-100"),
-        day_range_end: "day-range-end",
-        day_selected:
-          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        day_today: "bg-accent text-accent-foreground",
-        day_outside:
-          "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
-        day_disabled: "text-muted-foreground opacity-50",
-        day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
-        day_hidden: "invisible",
+        root: cn("w-fit", defaultClassNames.root),
+        months: cn("relative flex flex-col gap-4 md:flex-row", defaultClassNames.months),
+        month: cn("flex w-full flex-col gap-4", defaultClassNames.month),
+        nav: cn("absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1", defaultClassNames.nav),
+        button_previous: cn(buttonVariants({ variant: buttonVariant }), "h-[--cell-size] w-[--cell-size] p-0 z-10", defaultClassNames.button_previous),
+        button_next: cn(buttonVariants({ variant: buttonVariant }), "h-[--cell-size] w-[--cell-size] p-0 z-10", defaultClassNames.button_next),
+        month_caption: cn("flex h-[--cell-size] items-center justify-center px-[--cell-size]", defaultClassNames.month_caption),
+        dropdowns: cn("flex h-[--cell-size] items-center justify-center gap-1.5 text-sm font-medium relative z-20", defaultClassNames.dropdowns),
+        dropdown_root: cn("relative rounded-md border border-input bg-background shadow-sm", defaultClassNames.dropdown_root),
+        dropdown: cn("absolute inset-0 opacity-0 cursor-pointer z-30", defaultClassNames.dropdown),
+        caption_label: cn("select-none font-medium text-sm flex h-8 items-center gap-1 rounded-md px-2 pointer-events-none", defaultClassNames.caption_label),
+        table: "w-full border-collapse",
+        weekdays: cn("flex", defaultClassNames.weekdays),
+        weekday: cn("text-muted-foreground flex-1 text-[0.8rem] font-normal", defaultClassNames.weekday),
+        week: cn("mt-2 flex w-full", defaultClassNames.week),
+        day: cn("group/day relative aspect-square h-full w-full p-0 text-center", defaultClassNames.day),
+        today: cn("bg-accent text-accent-foreground rounded-md", defaultClassNames.today),
+        outside: cn("text-muted-foreground opacity-50", defaultClassNames.outside),
+        disabled: cn("text-muted-foreground opacity-50", defaultClassNames.disabled),
+        hidden: cn("invisible", defaultClassNames.hidden),
         ...classNames,
       }}
       components={{
-        IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
+        Chevron: ({ orientation }) => {
+          if (orientation === "left") return <ChevronLeftIcon className="size-4" />
+          if (orientation === "right") return <ChevronRightIcon className="size-4" />
+          return <ChevronDownIcon className="size-4" />
+        },
+        DayButton: CalendarDayButton,
+        ...components,
       }}
       {...props}
     />
-  );
+  )
 }
-Calendar.displayName = "Calendar";
 
-export { Calendar };
+function CalendarDayButton({
+  className,
+  day,
+  modifiers,
+  ...props
+}: React.ComponentProps<typeof DayButton>) {
+  const ref = React.useRef<HTMLButtonElement>(null)
+  React.useEffect(() => {
+    if (modifiers.focused) ref.current?.focus()
+  }, [modifiers.focused])
+
+  return (
+    <Button
+      ref={ref}
+      variant="ghost"
+      className={cn(
+        "h-full w-full p-0 font-normal data-[selected=true]:bg-[#334e5e] data-[selected=true]:text-white aria-selected:bg-[#334e5e] aria-selected:text-white",
+        className
+      )}
+      data-selected={modifiers.selected}
+      {...props}
+    />
+  )
+}
+
+export { Calendar }
