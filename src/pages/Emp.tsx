@@ -2,10 +2,34 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { 
-  LayoutDashboard, PlusCircle, Calendar as CalendarIcon, Phone, 
-  CreditCard, Briefcase, RefreshCw, Loader2, User, Save, MapPin, Building,
-  Search, Filter, X, Pencil, Trash2, AlertCircle, ArrowUpDown, ChevronUp, ChevronDown,
-  Layers, Award, Hash, Star, ShieldCheck, Zap, Medal // แก้ไขจาก Medallion เป็น Medal เพื่อแก้ Import Error
+  LayoutDashboard, 
+  PlusCircle, 
+  Calendar as CalendarIcon, 
+  Phone, 
+  CreditCard, 
+  Briefcase, 
+  RefreshCw, 
+  Loader2, 
+  User, 
+  Save, 
+  MapPin, 
+  Building,
+  Search, 
+  Filter, 
+  X, 
+  Pencil, 
+  Trash2, 
+  AlertCircle, 
+  ArrowUpDown, 
+  ChevronUp, 
+  ChevronDown,
+  Layers, 
+  Award, 
+  Hash, 
+  Star, 
+  ShieldCheck, 
+  Zap, 
+  Medal 
 } from "lucide-react";
 
 import Header from "@/components/Header";
@@ -24,6 +48,10 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 
+/**
+ * Interface สำหรับข้อมูลพนักงาน
+ * ต้องตรงกับโครงสร้าง Database ของคุณ
+ */
 interface Employee {
   id?: number;
   Name: string;
@@ -34,48 +62,63 @@ interface Employee {
   Division: string;
   Position: string;
   Entry_Date: string | number;
-  // --- Database Specific Keys ---
   Personel_Type: string;
   Position_Level: string;
   Position_No: string;
 }
 
 const Emp: React.FC = () => {
+  // --- STATE MANAGEMENT ---
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
+  // --- SEARCH & FILTER STATES (UI) ---
   const [searchName, setSearchName] = useState("");
   const [searchPosition, setSearchPosition] = useState("all");
   const [searchGen, setSearchGen] = useState("all");
   const [searchDivision, setSearchDivision] = useState("all");
   const [searchDepartment, setSearchDepartment] = useState("all");
+  const [searchPersonelType, setSearchPersonelType] = useState("all");
 
+  // --- ACTIVE FILTERS (LOGIC) ---
   const [activeFilters, setActiveFilters] = useState({
     name: "",
     position: "all",
     gen: "all",
     division: "all",
-    department: "all"
+    department: "all",
+    personelType: "all"
   });
   
+  // --- FORM DATA STATE ---
   const [formData, setFormData] = useState<Employee>({
-    Name: "", Citizen_id: "", Birthday: "", Tel: "", 
-    Department: "", Division: "", Position: "", Entry_Date: "",
-    Personel_Type: "", Position_Level: "", Position_No: ""
+    Name: "", 
+    Citizen_id: "", 
+    Birthday: "", 
+    Tel: "", 
+    Department: "", 
+    Division: "", 
+    Position: "", 
+    Entry_Date: "",
+    Personel_Type: "", 
+    Position_Level: "", 
+    Position_No: ""
   });
 
   // --- SORTING STATE ---
-  const [sortConfig, setSortConfig] = useState<{ key: 'Entry_Date' | 'Gen' | 'Level' | 'id', direction: 'asc' | 'desc' }>({
+  const [sortConfig, setSortConfig] = useState<{ 
+    key: 'Entry_Date' | 'Gen' | 'Level' | 'id', 
+    direction: 'asc' | 'desc' 
+  }>({
     key: 'id',
     direction: 'asc'
   });
 
-  // ฟังก์ชันกำหนดสไตล์ Badge ตามระดับ
+  // --- HELPERS: UI STYLING ---
   const getLevelStyle = (level: string) => {
     const l = level?.trim() || "";
     if (l.includes("เชี่ยวชาญ") || l.includes("ทรงคุณวุฒิ")) {
@@ -111,7 +154,7 @@ const Emp: React.FC = () => {
     if (l.includes("ชำนาญงาน")) {
       return {
         color: "bg-indigo-50 text-indigo-600 border-indigo-200",
-        icon: <Medal size={12} className="text-indigo-500" /> // แก้ไขจาก Medallion เป็น Medal
+        icon: <Medal size={12} className="text-indigo-500" />
       };
     }
     if (l.includes("ปฏิบัติงาน")) {
@@ -120,16 +163,15 @@ const Emp: React.FC = () => {
         icon: <Zap size={12} className="text-slate-500" />
       };
     }
-    // Default Style
     return {
       color: "bg-slate-100 text-slate-500 border-slate-200",
       icon: <Award size={12} />
     };
   };
 
-  // กำหนดลำดับความอาวุโสของระดับ (ใช้สำหรับ Sorting)
   const getLevelPriority = (level: string) => {
     const l = level?.trim() || "";
+    if (l.includes("ทรงคุณวุฒิ")) return 11;
     if (l.includes("เชี่ยวชาญ")) return 10;
     if (l.includes("ชำนาญการพิเศษ")) return 9;
     if (l.includes("ชำนาญการ")) return 8;
@@ -148,7 +190,7 @@ const Emp: React.FC = () => {
     setSortConfig({ key, direction });
   };
 
-  // --- SAFE GENERATION LOGIC ---
+  // --- DATA TRANSFORMATION ---
   const getGeneration = (birthday: string | number) => {
     if (!birthday || birthday === "0" || birthday === 0) return null;
     const str = birthday.toString();
@@ -170,7 +212,6 @@ const Emp: React.FC = () => {
     return { label: "Silent Gen", color: "bg-slate-50 text-slate-600 border-slate-100", rank: 1 };
   };
 
-  // --- SAFE FORMATTING LOGIC ---
   const formatToBEText = (dateVal: string | number) => {
     if (!dateVal || dateVal === "0" || dateVal === 0) return "-";
     const str = dateVal.toString();
@@ -197,6 +238,7 @@ const Emp: React.FC = () => {
     return `${d}/${m}/${y}`;
   };
 
+  // --- API HANDLERS ---
   const handleFetchData = async () => {
     try {
       setIsLoading(true);
@@ -212,15 +254,19 @@ const Emp: React.FC = () => {
     }
   };
 
-  useEffect(() => { handleFetchData(); }, []);
+  useEffect(() => {
+    handleFetchData();
+  }, []);
 
+  // --- SEARCH & FILTER LOGIC ---
   const handleSearch = () => {
     setActiveFilters({ 
       name: searchName, 
       position: searchPosition, 
       gen: searchGen,
       division: searchDivision,
-      department: searchDepartment
+      department: searchDepartment,
+      personelType: searchPersonelType
     });
   };
 
@@ -230,17 +276,16 @@ const Emp: React.FC = () => {
     setSearchGen("all");
     setSearchDivision("all");
     setSearchDepartment("all");
+    setSearchPersonelType("all");
     setActiveFilters({ 
       name: "", 
       position: "all", 
       gen: "all", 
       division: "all", 
-      department: "all" 
+      department: "all",
+      personelType: "all"
     });
-    setSortConfig({
-      key: 'id',
-      direction: 'asc'
-    });
+    setSortConfig({ key: 'id', direction: 'asc' });
   };
 
   const filteredEmployees = useMemo(() => {
@@ -249,11 +294,12 @@ const Emp: React.FC = () => {
       const matchesPosition = activeFilters.position === "all" || emp.Position === activeFilters.position;
       const matchesDivision = activeFilters.division === "all" || emp.Division === activeFilters.division;
       const matchesDepartment = activeFilters.department === "all" || emp.Department === activeFilters.department;
+      const matchesPersonelType = activeFilters.personelType === "all" || emp.Personel_Type === activeFilters.personelType;
       
       const genData = getGeneration(emp.Birthday);
       const matchesGen = activeFilters.gen === "all" || genData?.label === activeFilters.gen;
       
-      return matchesName && matchesPosition && matchesGen && matchesDivision && matchesDepartment;
+      return matchesName && matchesPosition && matchesGen && matchesDivision && matchesDepartment && matchesPersonelType;
     });
 
     return [...filtered].sort((a, b) => {
@@ -283,18 +329,13 @@ const Emp: React.FC = () => {
     });
   }, [employees, activeFilters, sortConfig]);
 
-  const uniquePositions = useMemo(() => {
-    return Array.from(new Set(employees.map(emp => emp.Position).filter(Boolean)));
-  }, [employees]);
+  // --- SELECT OPTION EXTRACTORS ---
+  const uniquePositions = useMemo(() => Array.from(new Set(employees.map(emp => emp.Position).filter(Boolean))), [employees]);
+  const uniqueDivisions = useMemo(() => Array.from(new Set(employees.map(emp => emp.Division).filter(Boolean))), [employees]);
+  const uniqueDepartments = useMemo(() => Array.from(new Set(employees.map(emp => emp.Department).filter(Boolean))), [employees]);
+  const uniquePersonelTypes = useMemo(() => Array.from(new Set(employees.map(emp => emp.Personel_Type).filter(Boolean))), [employees]);
 
-  const uniqueDivisions = useMemo(() => {
-    return Array.from(new Set(employees.map(emp => emp.Division).filter(Boolean)));
-  }, [employees]);
-
-  const uniqueDepartments = useMemo(() => {
-    return Array.from(new Set(employees.map(emp => emp.Department).filter(Boolean)));
-  }, [employees]);
-
+  // --- CRUD ACTIONS ---
   const handleOpenAdd = () => {
     setIsEditing(false);
     setFormData({ 
@@ -307,17 +348,8 @@ const Emp: React.FC = () => {
   const handleOpenEdit = (emp: Employee) => {
     setIsEditing(true);
     setFormData({
-      id: emp.id,
-      Name: emp.Name || "",
+      ...emp,
       Citizen_id: emp.Citizen_id?.toString() || "",
-      Birthday: emp.Birthday || "",
-      Tel: emp.Tel || "",
-      Department: emp.Department || "",
-      Division: emp.Division || "",
-      Position: emp.Position || "",
-      Entry_Date: emp.Entry_Date || "",
-      Personel_Type: emp.Personel_Type || "",
-      Position_Level: emp.Position_Level || "",
       Position_No: emp.Position_No?.toString() || ""
     });
     setIsAddOpen(true);
@@ -325,34 +357,15 @@ const Emp: React.FC = () => {
 
   const handleSaveEmployee = async () => {
     const endpoint = isEditing ? "update" : "add";
-    
-    const payload = {
-      ...(isEditing && { id: formData.id }),
-      Name: formData.Name || "",
-      Tel: formData.Tel || "",
-      Department: formData.Department || "",
-      Division: formData.Division || "",
-      Position: formData.Position || "",
-      Personel_Type: formData.Personel_Type || "",
-      Position_Level: formData.Position_Level || "",
-      Birthday: formData.Birthday || "",
-      Entry_Date: formData.Entry_Date || "",
-      Citizen_id: formData.Citizen_id ? formData.Citizen_id.toString() : "",
-      Position_No: formData.Position_No ? formData.Position_No.toString() : ""
-    };
-
     try {
       const response = await fetch(`http://localhost:3000/employees/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(formData),
       });
       if (response.ok) {
         setIsAddOpen(false);
         handleFetchData(); 
-      } else {
-        const errorData = await response.json();
-        console.error("Server Error:", errorData);
       }
     } catch (error) {
       console.error("Save error:", error);
@@ -379,8 +392,10 @@ const Emp: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       <Header />
+      
       <main className="flex-grow container mx-auto px-4 py-8">
         
+        {/* --- TOP HEADER SECTION --- */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-black text-[#334e5e] flex items-center gap-3">
             <LayoutDashboard className="text-[#d4c391] w-8 h-8" /> 
@@ -389,9 +404,10 @@ const Emp: React.FC = () => {
           
           <div className="flex gap-3">
             <Button onClick={handleFetchData} variant="outline" className="h-12 px-4 rounded-xl border-slate-200 bg-white" disabled={isLoading}>
-              รีเฟรชข้อมูล {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              รีเฟรช {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             </Button>
 
+            {/* ADD EMPLOYEE DIALOG */}
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
               <Button onClick={handleOpenAdd} className="bg-[#d4c391] hover:bg-[#c6b47e] text-[#334e5e] font-bold h-12 px-6 rounded-xl shadow-lg">
                 <PlusCircle className="mr-2" /> เพิ่มบุคลากรใหม่
@@ -403,20 +419,32 @@ const Emp: React.FC = () => {
                     {isEditing ? "แก้ไขข้อมูลพนักงาน" : "เพิ่มข้อมูลพนักงานใหม่"}
                   </DialogTitle>
                 </div>
+                
                 <div className="p-8 space-y-6 overflow-y-auto flex-grow custom-scrollbar">
                   <div className="space-y-2">
                     <Label className="text-xs font-black uppercase text-slate-400 ml-1">ชื่อ-นามสกุล</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                      <Input placeholder="ระบุชื่อและนามสกุล..." className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Name ?? ""} onChange={(e)=>setFormData({...formData, Name: e.target.value})} />
+                      <Input 
+                        placeholder="ระบุชื่อและนามสกุล..." 
+                        className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" 
+                        value={formData.Name} 
+                        onChange={(e)=>setFormData({...formData, Name: e.target.value})} 
+                      />
                     </div>
                   </div>
+
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">เลขบัตรประชาชน</Label>
                       <div className="relative">
                         <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                        <Input placeholder="Citizen ID" className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Citizen_id ?? ""} onChange={(e)=>setFormData({...formData, Citizen_id: e.target.value})} />
+                        <Input 
+                          placeholder="Citizen ID" 
+                          className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" 
+                          value={formData.Citizen_id} 
+                          onChange={(e)=>setFormData({...formData, Citizen_id: e.target.value})} 
+                        />
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -433,18 +461,31 @@ const Emp: React.FC = () => {
                         </PopoverContent>
                       </Popover>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">เบอร์โทรศัพท์</Label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                        <Input placeholder="08x-xxx-xxxx" className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Tel ?? ""} onChange={(e)=>setFormData({...formData, Tel: e.target.value})} />
+                        <Input 
+                          placeholder="08x-xxx-xxxx" 
+                          className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" 
+                          value={formData.Tel} 
+                          onChange={(e)=>setFormData({...formData, Tel: e.target.value})} 
+                        />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">ตำแหน่ง</Label>
                       <div className="relative">
                         <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                        <Input placeholder="ระบุตำแหน่ง..." className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Position ?? ""} onChange={(e)=>setFormData({...formData, Position: e.target.value})} />
+                        <Input 
+                          placeholder="ระบุตำแหน่ง..." 
+                          className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" 
+                          value={formData.Position} 
+                          onChange={(e)=>setFormData({...formData, Position: e.target.value})} 
+                        />
                       </div>
                     </div>
                   </div>
@@ -452,52 +493,45 @@ const Emp: React.FC = () => {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">ประเภทบุคลากร</Label>
-                      <div className="relative">
-                        <Layers className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                        <Input placeholder="เช่น ข้าราชการ..." className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Personel_Type ?? ""} onChange={(e)=>setFormData({...formData, Personel_Type: e.target.value})} />
-                      </div>
+                      <Input placeholder="ข้าราชการ..." className="h-12 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Personel_Type} onChange={(e)=>setFormData({...formData, Personel_Type: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">ระดับ</Label>
-                      <div className="relative">
-                        <Award className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                        <Input placeholder="เช่น ชำนาญการ..." className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Position_Level ?? ""} onChange={(e)=>setFormData({...formData, Position_Level: e.target.value})} />
-                      </div>
+                      <Input placeholder="ชำนาญการ..." className="h-12 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Position_Level} onChange={(e)=>setFormData({...formData, Position_Level: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">เลขที่ตำแหน่ง</Label>
-                      <div className="relative">
-                        <Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                        <Input placeholder="ระบุเลขที่..." className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Position_No ?? ""} onChange={(e)=>setFormData({...formData, Position_No: e.target.value})} />
-                      </div>
+                      <Input placeholder="เลขที่..." className="h-12 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Position_No} onChange={(e)=>setFormData({...formData, Position_No: e.target.value})} />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">ฝ่าย / Division</Label>
-                      <Input placeholder="Division..." className="h-12 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Division ?? ""} onChange={(e)=>setFormData({...formData, Division: e.target.value})} />
+                      <Input placeholder="Division..." className="h-12 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Division} onChange={(e)=>setFormData({...formData, Division: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">แผนก / Department</Label>
-                      <Input placeholder="Department..." className="h-12 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Department ?? ""} onChange={(e)=>setFormData({...formData, Department: e.target.value})} />
-                    </div>
-                    <div className="space-y-2 col-span-2">
-                      <Label className="text-xs font-black uppercase text-slate-400 ml-1">วันที่เริ่มงาน (พ.ศ.)</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full h-12 justify-start border-slate-100 bg-slate-50/50 rounded-xl text-[#334e5e]">
-                            <CalendarIcon className="mr-2 h-4 w-4 text-[#d4c391]" />
-                            {formData.Entry_Date ? formatToBEText(formData.Entry_Date) : "เลือกวันเริ่มงาน"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 rounded-xl border-none shadow-xl z-[110]" align="start">
-                          <Calendar mode="single" captionLayout="dropdown" onSelect={(date) => setFormData({...formData, Entry_Date: dateToADString(date)})} />
-                        </PopoverContent>
-                      </Popover>
+                      <Input placeholder="Department..." className="h-12 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Department} onChange={(e)=>setFormData({...formData, Department: e.target.value})} />
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-black uppercase text-slate-400 ml-1">วันที่เริ่มงาน (พ.ศ.)</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full h-12 justify-start border-slate-100 bg-slate-50/50 rounded-xl text-[#334e5e]">
+                          <CalendarIcon className="mr-2 h-4 w-4 text-[#d4c391]" />
+                          {formData.Entry_Date ? formatToBEText(formData.Entry_Date) : "เลือกวันเริ่มงาน"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 rounded-xl border-none shadow-xl z-[110]" align="start">
+                        <Calendar mode="single" captionLayout="dropdown" onSelect={(date) => setFormData({...formData, Entry_Date: dateToADString(date)})} />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
+
                 <div className="p-6 bg-slate-50 border-t flex gap-3 shrink-0">
                   <Button variant="ghost" onClick={()=>setIsAddOpen(false)} className="flex-1 h-12 font-bold text-slate-400">ยกเลิก</Button>
                   <Button onClick={handleSaveEmployee} className="bg-[#334e5e] hover:bg-[#253945] text-white flex-[2] h-12 font-bold rounded-xl shadow-lg flex items-center justify-center gap-2">
@@ -509,26 +543,47 @@ const Emp: React.FC = () => {
           </div>
         </div>
 
+        {/* DELETE CONFIRMATION DIALOG */}
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
           <DialogContent className="sm:max-w-[400px] p-8 rounded-[2rem] text-center">
-            <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><AlertCircle size={32} /></div>
+            <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <AlertCircle size={32} />
+            </div>
             <DialogTitle className="text-xl font-bold text-[#334e5e] mb-2">ยืนยันการลบข้อมูล?</DialogTitle>
-            <p className="text-sm text-slate-400 mb-6">คุณแน่ใจว่าต้องการลบข้อมูลของ <span className="font-black">{selectedEmployee?.Name}</span></p>
+            <p className="text-sm text-slate-400 mb-6">คุณแน่ใจว่าต้องการลบข้อมูลของ <span className="font-black text-rose-500">{selectedEmployee?.Name}</span></p>
             <div className="flex gap-3">
               <Button variant="ghost" onClick={()=>setIsDeleteOpen(false)} className="flex-1">ยกเลิก</Button>
-              <Button onClick={confirmDelete} className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl">ยืนยันลบ</Button>
+              <Button onClick={confirmDelete} className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl shadow-lg shadow-rose-100">ยืนยันลบ</Button>
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* --- SEARCH BAR --- */}
+        {/* --- SEARCH FILTER SECTION --- */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-3 items-end">
+            
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
-                <User size={12} /> ค้นหาชื่อ
+                <User size={12} /> ชื่อพนักงาน
               </Label>
-              <Input placeholder="พิมพ์ชื่อ..." className="h-11 rounded-xl" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
+              <Input placeholder="ค้นหาชื่อ..." className="h-11 rounded-xl bg-slate-50/30 border-slate-100" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
+                <Layers size={12} /> ประเภท
+              </Label>
+              <Select value={searchPersonelType} onValueChange={setSearchPersonelType}>
+                <SelectTrigger className="h-11 rounded-xl bg-slate-50/30 border-slate-100">
+                  <SelectValue placeholder="ทุกประเภท" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทุกประเภทบุคลากร</SelectItem>
+                  {uniquePersonelTypes.map((type) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -536,10 +591,14 @@ const Emp: React.FC = () => {
                 <Briefcase size={12} /> ตำแหน่ง
               </Label>
               <Select value={searchPosition} onValueChange={setSearchPosition}>
-                <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ทุกตำแหน่ง" /></SelectTrigger>
+                <SelectTrigger className="h-11 rounded-xl bg-slate-50/30 border-slate-100">
+                  <SelectValue placeholder="ทุกตำแหน่ง" />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">ทุกตำแหน่ง</SelectItem>
-                  {uniquePositions.map((pos) => (<SelectItem key={pos} value={pos}>{pos}</SelectItem>))}
+                  <SelectItem value="all">ทุกตำแหน่งงาน</SelectItem>
+                  {uniquePositions.map((pos) => (
+                    <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -549,10 +608,14 @@ const Emp: React.FC = () => {
                 <MapPin size={12} /> ฝ่าย
               </Label>
               <Select value={searchDivision} onValueChange={setSearchDivision}>
-                <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ทุกฝ่าย" /></SelectTrigger>
+                <SelectTrigger className="h-11 rounded-xl bg-slate-50/30 border-slate-100">
+                  <SelectValue placeholder="ทุกฝ่าย" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">ทุกฝ่าย (Division)</SelectItem>
-                  {uniqueDivisions.map((div) => (<SelectItem key={div} value={div}>{div}</SelectItem>))}
+                  {uniqueDivisions.map((div) => (
+                    <SelectItem key={div} value={div}>{div}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -562,22 +625,28 @@ const Emp: React.FC = () => {
                 <Building size={12} /> แผนก
               </Label>
               <Select value={searchDepartment} onValueChange={setSearchDepartment}>
-                <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ทุกแผนก" /></SelectTrigger>
+                <SelectTrigger className="h-11 rounded-xl bg-slate-50/30 border-slate-100">
+                  <SelectValue placeholder="ทุกแผนก" />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">ทุกแผนก (Department)</SelectItem>
-                  {uniqueDepartments.map((dept) => (<SelectItem key={dept} value={dept}>{dept}</SelectItem>))}
+                  <SelectItem value="all">ทุกแผนก (Dept)</SelectItem>
+                  {uniqueDepartments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
-                <Filter size={12} /> Gen
+                <Filter size={12} /> Generation
               </Label>
               <Select value={searchGen} onValueChange={setSearchGen}>
-                <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ทุก Gen" /></SelectTrigger>
+                <SelectTrigger className="h-11 rounded-xl bg-slate-50/30 border-slate-100">
+                  <SelectValue placeholder="ทุก Gen" />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">ทุก Generation</SelectItem>
+                  <SelectItem value="all">ทุกช่วงอายุ (Gen)</SelectItem>
                   <SelectItem value="Gen Alpha">Gen Alpha</SelectItem>
                   <SelectItem value="Gen Z">Gen Z</SelectItem>
                   <SelectItem value="Gen Y">Gen Y</SelectItem>
@@ -588,115 +657,169 @@ const Emp: React.FC = () => {
             </div>
 
             <div className="flex gap-2">
-              <Button className="h-11 bg-[#334e5e] text-white font-bold rounded-xl flex-1 hover:bg-[#253945]" onClick={handleSearch}><Search size={18} className="mr-2"/> ค้นหา</Button>
+              <Button className="h-11 bg-[#334e5e] text-white font-bold rounded-xl flex-1 hover:bg-[#253945] shadow-md shadow-slate-200" onClick={handleSearch}>
+                <Search size={16} />
+              </Button>
               <Button 
                 variant="outline" 
-                className="h-11 bg-rose-500 text-white hover:bg-white hover:text-rose-500 border-rose-500 font-bold rounded-xl flex items-center gap-1 px-4 transition-colors" 
+                className="h-11 bg-rose-500 text-white hover:bg-white hover:text-rose-500 border-rose-500 font-bold rounded-xl flex-1 transition-all" 
                 onClick={handleClearFilters}
               >
-                <X size={16}/> ล้าง
+                <X size={16}/>
               </Button>
             </div>
           </div>
         </div>
 
+        {/* --- MAIN DATA TABLE SECTION --- */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1200px]">
+          <table className="w-full text-left border-collapse min-w-full">
             <thead className="bg-slate-50/50 text-[#334e5e] text-[10px] font-black uppercase tracking-widest">
               <tr>
-                <th className="px-4 py-5 text-center">No.</th>
-                <th className="px-6 py-5">ชื่อ / ประเภท</th>
-                <th className="px-6 py-5 text-center">เลขที่ตำแหน่ง</th>
+                <th className="px-4 py-6 text-center">No.</th>
+                <th className="px-6 py-6">ชื่อพนักงาน / ประเภท</th>
+                <th className="px-6 py-6 text-center">เลขที่ตำแหน่ง</th>
                 <th 
-                  className="px-6 py-5 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                  className="px-6 py-6 text-center cursor-pointer hover:bg-slate-100/50 transition-colors"
                   onClick={() => handleSort('Level')}
                 >
                   <div className="flex items-center justify-center gap-1">
                     ระดับ {sortConfig.key === 'Level' ? (sortConfig.direction === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>) : <ArrowUpDown size={12}/>}
                   </div>
                 </th>
-                <th className="px-6 py-5">ตำแหน่งงาน/แผนก</th>
+                <th className="px-6 py-6">ตำแหน่งงาน / สังกัด</th>
                 <th 
-                  className="px-6 py-5 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                  className="px-6 py-6 text-center cursor-pointer hover:bg-slate-100/50 transition-colors"
                   onClick={() => handleSort('Gen')}
                 >
                   <div className="flex items-center justify-center gap-1">
                     วันเกิด {sortConfig.key === 'Gen' ? (sortConfig.direction === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>) : <ArrowUpDown size={12}/>}
                   </div>
                 </th>
-                <th className="px-6 py-5 text-center">เบอร์โทรศัพท์</th>
+                <th className="px-6 py-6 text-center">เบอร์โทรศัพท์</th>
                 <th 
-                  className="px-6 py-5 text-right cursor-pointer hover:bg-slate-100 transition-colors"
+                  className="px-6 py-6 text-right cursor-pointer hover:bg-slate-100/50 transition-colors"
                   onClick={() => handleSort('Entry_Date')}
                 >
                   <div className="flex items-center justify-end gap-1">
-                    วันที่เริ่มเข้าทำงาน {sortConfig.key === 'Entry_Date' ? (sortConfig.direction === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>) : <ArrowUpDown size={12}/>}
+                    เริ่มงาน {sortConfig.key === 'Entry_Date' ? (sortConfig.direction === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>) : <ArrowUpDown size={12}/>}
                   </div>
                 </th>
-                <th className="px-6 py-5 text-center">Manage</th>
+                <th className="px-6 py-6 text-center">จัดการ</th>
               </tr>
             </thead>
+            
             <tbody className="divide-y divide-slate-50">
               {filteredEmployees.length === 0 ? (
-                <tr><td colSpan={9} className="px-6 py-10 text-center text-slate-400 font-medium italic">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>
+                <tr>
+                  <td colSpan={9} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center gap-2 text-slate-300">
+                      <Search size={48} strokeWidth={1} />
+                      <p className="font-medium italic">ไม่พบข้อมูลที่ตรงกับการค้นหาของคุณ</p>
+                    </div>
+                  </td>
+                </tr>
               ) : (
                 filteredEmployees.map((emp, idx) => {
                   const gen = getGeneration(emp.Birthday);
                   const levelStyle = getLevelStyle(emp.Position_Level);
                   
                   return (
-                    <tr key={emp.id || idx} className="hover:bg-slate-50/30 transition-all group">
-                      <td className="px-4 py-4 text-center font-black text-slate-300 text-xs">{idx + 1}</td>
+                    <tr key={emp.id || idx} className="hover:bg-slate-50/40 transition-all group">
+                      <td className="px-4 py-4 text-center font-black text-slate-300 text-xs">
+                        {(idx + 1).toString().padStart(2, '0')}
+                      </td>
                       
-                      {/* Name + Personel Type */}
+                      {/* Name + Type Column */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-[#d4c391]/10 flex items-center justify-center text-[#d4c391] shrink-0"><User size={20} /></div>
+                          <div className="w-10 h-10 rounded-xl bg-[#d4c391]/10 flex items-center justify-center text-[#d4c391] shrink-0 group-hover:scale-110 transition-transform">
+                            <User size={20} />
+                          </div>
                           <div>
-                            <button onClick={() => handleOpenEdit(emp)} className="font-bold text-[#334e5e] text-sm hover:text-[#d4c391] transition-colors text-left block">{emp.Name}</button>
-                            <span className="inline-block mt-1 px-2 py-0.5 text-[9px] font-black bg-slate-100 text-slate-500 rounded uppercase border border-slate-200">
-                              {emp.Personel_Type || "-"}
-                            </span>
+                            <button 
+                              onClick={() => handleOpenEdit(emp)} 
+                              className="font-bold text-[#334e5e] text-sm hover:text-[#d4c391] transition-colors text-left"
+                            >
+                              {emp.Name}
+                            </button>
+                            <div className="mt-1">
+                              <span className="px-2 py-0.5 text-[9px] font-black bg-slate-100 text-slate-500 rounded border border-slate-200 uppercase">
+                                {emp.Personel_Type || "ไม่ระบุ"}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* เลขที่ตำแหน่ง */}
+                      {/* Position Number */}
                       <td className="px-6 py-4 text-center">
-                        <div className="inline-flex items-center gap-1 text-xs font-mono font-bold text-[#d4c391] bg-[#d4c391]/5 px-3 py-1 rounded-lg border border-[#d4c391]/20">
+                        <div className="inline-flex items-center font-mono font-bold text-[#d4c391] bg-[#d4c391]/5 px-3 py-1.5 rounded-lg border border-[#d4c391]/20 text-xs">
                           {emp.Position_No || "-"}
                         </div>
                       </td>
 
-                      {/* ระดับ */}
+                      {/* Level Badge */}
                       <td className="px-6 py-4 text-center">
-                        <div className={`inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full border uppercase transition-colors ${levelStyle.color}`}>
+                        <div className={`inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full border uppercase tracking-tight ${levelStyle.color}`}>
                           {levelStyle.icon} {emp.Position_Level || "-"}
                         </div>
                       </td>
 
+                      {/* Work Details */}
                       <td className="px-6 py-4">
-                        <div className="text-sm font-bold text-slate-600 flex items-center gap-1.5"><Briefcase size={12} className="text-[#d4c391]" /> {emp.Position}</div>
-                        <div className="text-[10px] text-slate-400 uppercase font-black mt-0.5 flex flex-wrap gap-2">
+                        <div className="text-sm font-bold text-slate-600 flex items-center gap-1.5">
+                          <Briefcase size={12} className="text-[#d4c391]" /> {emp.Position}
+                        </div>
+                        <div className="text-[10px] text-slate-400 uppercase font-black mt-1 flex flex-wrap gap-x-3">
                           <span className="flex items-center gap-1"><Building size={10} /> {emp.Department}</span>
                           <span className="flex items-center gap-1"><MapPin size={10} /> {emp.Division}</span>
                         </div>
                       </td>
 
+                      {/* Birthday & Gen */}
                       <td className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className="text-xs font-bold text-slate-500">{formatToBEText(emp.Birthday)}</span>
-                          {gen && <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border uppercase tracking-tighter ${gen.color}`}>{gen.label}</span>}
+                          {gen && (
+                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border uppercase tracking-tighter shadow-sm ${gen.color}`}>
+                              {gen.label}
+                            </span>
+                          )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-center text-xs font-black text-slate-600">{emp.Tel}</td>
-                      <td className="px-6 py-4 text-right">
-                         <span className="text-xs font-black text-[#d4c391] bg-[#d4c391]/5 px-3 py-1.5 rounded-lg border border-[#d4c391]/20">{formatToBEText(emp.Entry_Date)}</span>
+
+                      {/* Contact */}
+                      <td className="px-6 py-4 text-center text-xs font-black text-slate-600">
+                        {emp.Tel || "-"}
                       </td>
+
+                      {/* Entry Date */}
+                      <td className="px-6 py-4 text-right">
+                         <span className="text-xs font-black text-[#d4c391] bg-[#d4c391]/5 px-3 py-2 rounded-lg border border-[#d4c391]/20">
+                           {formatToBEText(emp.Entry_Date)}
+                         </span>
+                      </td>
+
+                      {/* Action Buttons */}
                       <td className="px-6 py-4 text-center">
-                        <div className="flex justify-center gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(emp)} className="text-blue-500 hover:bg-blue-50"><Pencil size={16} /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} className="text-rose-500 hover:bg-rose-50"><Trash2 size={16} /></Button>
+                        <div className="flex justify-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleOpenEdit(emp)} 
+                            className="text-blue-500 hover:bg-blue-50 hover:text-blue-600 rounded-lg"
+                          >
+                            <Pencil size={16} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} 
+                            className="text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -708,6 +831,7 @@ const Emp: React.FC = () => {
         </div>
 
       </main>
+      
       <Footer />
     </div>
   );
