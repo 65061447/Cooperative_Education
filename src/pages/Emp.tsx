@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { 
   LayoutDashboard, PlusCircle, Calendar as CalendarIcon, Phone, 
   CreditCard, Briefcase, RefreshCw, Loader2, User, Save, MapPin, Building,
-  Search, Filter, X, Pencil, Trash2, AlertCircle, ArrowUpDown, ChevronUp, ChevronDown
+  Search, Filter, X, Pencil, Trash2, AlertCircle, ArrowUpDown, ChevronUp, ChevronDown,
+  Layers, Award, Hash, Star, ShieldCheck, Zap, Medal // แก้ไขจาก Medallion เป็น Medal เพื่อแก้ Import Error
 } from "lucide-react";
 
 import Header from "@/components/Header";
@@ -33,6 +34,10 @@ interface Employee {
   Division: string;
   Position: string;
   Entry_Date: string | number;
+  // --- Database Specific Keys ---
+  Personel_Type: string;
+  Position_Level: string;
+  Position_No: string;
 }
 
 const Emp: React.FC = () => {
@@ -60,16 +65,82 @@ const Emp: React.FC = () => {
   
   const [formData, setFormData] = useState<Employee>({
     Name: "", Citizen_id: "", Birthday: "", Tel: "", 
-    Department: "", Division: "", Position: "", Entry_Date: ""
+    Department: "", Division: "", Position: "", Entry_Date: "",
+    Personel_Type: "", Position_Level: "", Position_No: ""
   });
 
   // --- SORTING STATE ---
-  const [sortConfig, setSortConfig] = useState<{ key: 'Entry_Date' | 'Gen' | 'id', direction: 'asc' | 'desc' }>({
+  const [sortConfig, setSortConfig] = useState<{ key: 'Entry_Date' | 'Gen' | 'Level' | 'id', direction: 'asc' | 'desc' }>({
     key: 'id',
     direction: 'asc'
   });
 
-  const handleSort = (key: 'Entry_Date' | 'Gen') => {
+  // ฟังก์ชันกำหนดสไตล์ Badge ตามระดับ
+  const getLevelStyle = (level: string) => {
+    const l = level?.trim() || "";
+    if (l.includes("เชี่ยวชาญ") || l.includes("ทรงคุณวุฒิ")) {
+      return {
+        color: "bg-amber-50 text-amber-600 border-amber-200",
+        icon: <Star size={12} className="text-amber-500" />
+      };
+    }
+    if (l.includes("ชำนาญการพิเศษ")) {
+      return {
+        color: "bg-orange-50 text-orange-600 border-orange-200",
+        icon: <Award size={12} className="text-orange-500" />
+      };
+    }
+    if (l.includes("ชำนาญการ")) {
+      return {
+        color: "bg-sky-50 text-sky-600 border-sky-200",
+        icon: <ShieldCheck size={12} className="text-sky-500" />
+      };
+    }
+    if (l.includes("ปฏิบัติการ")) {
+      return {
+        color: "bg-emerald-50 text-emerald-600 border-emerald-200",
+        icon: <Zap size={12} className="text-emerald-500" />
+      };
+    }
+    if (l.includes("อาวุโส")) {
+      return {
+        color: "bg-violet-50 text-violet-600 border-violet-200",
+        icon: <Award size={12} className="text-violet-500" />
+      };
+    }
+    if (l.includes("ชำนาญงาน")) {
+      return {
+        color: "bg-indigo-50 text-indigo-600 border-indigo-200",
+        icon: <Medal size={12} className="text-indigo-500" /> // แก้ไขจาก Medallion เป็น Medal
+      };
+    }
+    if (l.includes("ปฏิบัติงาน")) {
+      return {
+        color: "bg-slate-50 text-slate-600 border-slate-200",
+        icon: <Zap size={12} className="text-slate-500" />
+      };
+    }
+    // Default Style
+    return {
+      color: "bg-slate-100 text-slate-500 border-slate-200",
+      icon: <Award size={12} />
+    };
+  };
+
+  // กำหนดลำดับความอาวุโสของระดับ (ใช้สำหรับ Sorting)
+  const getLevelPriority = (level: string) => {
+    const l = level?.trim() || "";
+    if (l.includes("เชี่ยวชาญ")) return 10;
+    if (l.includes("ชำนาญการพิเศษ")) return 9;
+    if (l.includes("ชำนาญการ")) return 8;
+    if (l.includes("ปฏิบัติการ")) return 7;
+    if (l.includes("อาวุโส")) return 6;
+    if (l.includes("ชำนาญงาน")) return 5;
+    if (l.includes("ปฏิบัติงาน")) return 4;
+    return 0;
+  };
+
+  const handleSort = (key: 'Entry_Date' | 'Gen' | 'Level') => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -200,6 +271,10 @@ const Emp: React.FC = () => {
         const rankA = getGeneration(a.Birthday)?.rank || 0;
         const rankB = getGeneration(b.Birthday)?.rank || 0;
         return sortConfig.direction === 'asc' ? rankA - rankB : rankB - rankA;
+      } else if (sortConfig.key === 'Level') {
+        const priorityA = getLevelPriority(a.Position_Level);
+        const priorityB = getLevelPriority(b.Position_Level);
+        return sortConfig.direction === 'asc' ? priorityA - priorityB : priorityB - priorityA;
       } else {
         const idA = a.id || 0;
         const idB = b.id || 0;
@@ -222,21 +297,48 @@ const Emp: React.FC = () => {
 
   const handleOpenAdd = () => {
     setIsEditing(false);
-    setFormData({ Name: "", Citizen_id: "", Birthday: "", Tel: "", Department: "", Division: "", Position: "", Entry_Date: "" });
+    setFormData({ 
+      Name: "", Citizen_id: "", Birthday: "", Tel: "", Department: "", Division: "", Position: "", Entry_Date: "",
+      Personel_Type: "", Position_Level: "", Position_No: "" 
+    });
     setIsAddOpen(true);
   };
 
   const handleOpenEdit = (emp: Employee) => {
     setIsEditing(true);
-    setFormData(emp);
+    setFormData({
+      id: emp.id,
+      Name: emp.Name || "",
+      Citizen_id: emp.Citizen_id?.toString() || "",
+      Birthday: emp.Birthday || "",
+      Tel: emp.Tel || "",
+      Department: emp.Department || "",
+      Division: emp.Division || "",
+      Position: emp.Position || "",
+      Entry_Date: emp.Entry_Date || "",
+      Personel_Type: emp.Personel_Type || "",
+      Position_Level: emp.Position_Level || "",
+      Position_No: emp.Position_No?.toString() || ""
+    });
     setIsAddOpen(true);
   };
 
   const handleSaveEmployee = async () => {
     const endpoint = isEditing ? "update" : "add";
+    
     const payload = {
-      ...formData,
-      Citizen_id: formData.Citizen_id.toString().replace(/[^0-9]/g, ""),
+      ...(isEditing && { id: formData.id }),
+      Name: formData.Name || "",
+      Tel: formData.Tel || "",
+      Department: formData.Department || "",
+      Division: formData.Division || "",
+      Position: formData.Position || "",
+      Personel_Type: formData.Personel_Type || "",
+      Position_Level: formData.Position_Level || "",
+      Birthday: formData.Birthday || "",
+      Entry_Date: formData.Entry_Date || "",
+      Citizen_id: formData.Citizen_id ? formData.Citizen_id.toString() : "",
+      Position_No: formData.Position_No ? formData.Position_No.toString() : ""
     };
 
     try {
@@ -248,6 +350,9 @@ const Emp: React.FC = () => {
       if (response.ok) {
         setIsAddOpen(false);
         handleFetchData(); 
+      } else {
+        const errorData = await response.json();
+        console.error("Server Error:", errorData);
       }
     } catch (error) {
       console.error("Save error:", error);
@@ -303,7 +408,7 @@ const Emp: React.FC = () => {
                     <Label className="text-xs font-black uppercase text-slate-400 ml-1">ชื่อ-นามสกุล</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                      <Input placeholder="ระบุชื่อและนามสกุล..." className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Name} onChange={(e)=>setFormData({...formData, Name: e.target.value})} />
+                      <Input placeholder="ระบุชื่อและนามสกุล..." className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Name ?? ""} onChange={(e)=>setFormData({...formData, Name: e.target.value})} />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-6">
@@ -311,7 +416,7 @@ const Emp: React.FC = () => {
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">เลขบัตรประชาชน</Label>
                       <div className="relative">
                         <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                        <Input placeholder="Citizen ID" className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Citizen_id} onChange={(e)=>setFormData({...formData, Citizen_id: e.target.value})} />
+                        <Input placeholder="Citizen ID" className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Citizen_id ?? ""} onChange={(e)=>setFormData({...formData, Citizen_id: e.target.value})} />
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -332,23 +437,50 @@ const Emp: React.FC = () => {
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">เบอร์โทรศัพท์</Label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                        <Input placeholder="08x-xxx-xxxx" className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Tel} onChange={(e)=>setFormData({...formData, Tel: e.target.value})} />
+                        <Input placeholder="08x-xxx-xxxx" className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Tel ?? ""} onChange={(e)=>setFormData({...formData, Tel: e.target.value})} />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">ตำแหน่ง</Label>
                       <div className="relative">
                         <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                        <Input placeholder="ระบุตำแหน่ง..." className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Position} onChange={(e)=>setFormData({...formData, Position: e.target.value})} />
+                        <Input placeholder="ระบุตำแหน่ง..." className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Position ?? ""} onChange={(e)=>setFormData({...formData, Position: e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase text-slate-400 ml-1">ประเภทบุคลากร</Label>
+                      <div className="relative">
+                        <Layers className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
+                        <Input placeholder="เช่น ข้าราชการ..." className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Personel_Type ?? ""} onChange={(e)=>setFormData({...formData, Personel_Type: e.target.value})} />
                       </div>
                     </div>
                     <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase text-slate-400 ml-1">ระดับ</Label>
+                      <div className="relative">
+                        <Award className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
+                        <Input placeholder="เช่น ชำนาญการ..." className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Position_Level ?? ""} onChange={(e)=>setFormData({...formData, Position_Level: e.target.value})} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase text-slate-400 ml-1">เลขที่ตำแหน่ง</Label>
+                      <div className="relative">
+                        <Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
+                        <Input placeholder="ระบุเลขที่..." className="h-12 pl-10 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Position_No ?? ""} onChange={(e)=>setFormData({...formData, Position_No: e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">ฝ่าย / Division</Label>
-                      <Input placeholder="Division..." className="h-12 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Division} onChange={(e)=>setFormData({...formData, Division: e.target.value})} />
+                      <Input placeholder="Division..." className="h-12 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Division ?? ""} onChange={(e)=>setFormData({...formData, Division: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">แผนก / Department</Label>
-                      <Input placeholder="Department..." className="h-12 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Department} onChange={(e)=>setFormData({...formData, Department: e.target.value})} />
+                      <Input placeholder="Department..." className="h-12 border-slate-100 bg-slate-50/50 rounded-xl" value={formData.Department ?? ""} onChange={(e)=>setFormData({...formData, Department: e.target.value})} />
                     </div>
                     <div className="space-y-2 col-span-2">
                       <Label className="text-xs font-black uppercase text-slate-400 ml-1">วันที่เริ่มงาน (พ.ศ.)</Label>
@@ -469,12 +601,20 @@ const Emp: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1000px]">
+          <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead className="bg-slate-50/50 text-[#334e5e] text-[10px] font-black uppercase tracking-widest">
               <tr>
                 <th className="px-4 py-5 text-center">No.</th>
-                <th className="px-6 py-5">ชื่อ</th>
-                <th className="px-6 py-5 text-center">เลขบัตรประชาชน</th>
+                <th className="px-6 py-5">ชื่อ / ประเภท</th>
+                <th className="px-6 py-5 text-center">เลขที่ตำแหน่ง</th>
+                <th 
+                  className="px-6 py-5 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => handleSort('Level')}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    ระดับ {sortConfig.key === 'Level' ? (sortConfig.direction === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>) : <ArrowUpDown size={12}/>}
+                  </div>
+                </th>
                 <th className="px-6 py-5">ตำแหน่งงาน/แผนก</th>
                 <th 
                   className="px-6 py-5 text-center cursor-pointer hover:bg-slate-100 transition-colors"
@@ -498,20 +638,43 @@ const Emp: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredEmployees.length === 0 ? (
-                <tr><td colSpan={8} className="px-6 py-10 text-center text-slate-400 font-medium italic">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>
+                <tr><td colSpan={9} className="px-6 py-10 text-center text-slate-400 font-medium italic">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>
               ) : (
                 filteredEmployees.map((emp, idx) => {
                   const gen = getGeneration(emp.Birthday);
+                  const levelStyle = getLevelStyle(emp.Position_Level);
+                  
                   return (
                     <tr key={emp.id || idx} className="hover:bg-slate-50/30 transition-all group">
                       <td className="px-4 py-4 text-center font-black text-slate-300 text-xs">{idx + 1}</td>
-                      <td className="px-6 py-4 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#d4c391]/10 flex items-center justify-center text-[#d4c391]"><User size={20} /></div>
-                        <button onClick={() => handleOpenEdit(emp)} className="font-bold text-[#334e5e] text-sm hover:text-[#d4c391] transition-colors text-left">{emp.Name}</button>
+                      
+                      {/* Name + Personel Type */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-[#d4c391]/10 flex items-center justify-center text-[#d4c391] shrink-0"><User size={20} /></div>
+                          <div>
+                            <button onClick={() => handleOpenEdit(emp)} className="font-bold text-[#334e5e] text-sm hover:text-[#d4c391] transition-colors text-left block">{emp.Name}</button>
+                            <span className="inline-block mt-1 px-2 py-0.5 text-[9px] font-black bg-slate-100 text-slate-500 rounded uppercase border border-slate-200">
+                              {emp.Personel_Type || "-"}
+                            </span>
+                          </div>
+                        </div>
                       </td>
+
+                      {/* เลขที่ตำแหน่ง */}
                       <td className="px-6 py-4 text-center">
-                        <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">{emp.Citizen_id || "-"}</span>
+                        <div className="inline-flex items-center gap-1 text-xs font-mono font-bold text-[#d4c391] bg-[#d4c391]/5 px-3 py-1 rounded-lg border border-[#d4c391]/20">
+                          {emp.Position_No || "-"}
+                        </div>
                       </td>
+
+                      {/* ระดับ */}
+                      <td className="px-6 py-4 text-center">
+                        <div className={`inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full border uppercase transition-colors ${levelStyle.color}`}>
+                          {levelStyle.icon} {emp.Position_Level || "-"}
+                        </div>
+                      </td>
+
                       <td className="px-6 py-4">
                         <div className="text-sm font-bold text-slate-600 flex items-center gap-1.5"><Briefcase size={12} className="text-[#d4c391]" /> {emp.Position}</div>
                         <div className="text-[10px] text-slate-400 uppercase font-black mt-0.5 flex flex-wrap gap-2">
@@ -519,6 +682,7 @@ const Emp: React.FC = () => {
                           <span className="flex items-center gap-1"><MapPin size={10} /> {emp.Division}</span>
                         </div>
                       </td>
+
                       <td className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className="text-xs font-bold text-slate-500">{formatToBEText(emp.Birthday)}</span>

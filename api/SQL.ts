@@ -33,13 +33,26 @@ app.get('/employees', async (req: Request, res: Response) => {
 // ADD NEW
 app.post('/employees/add', async (req: Request, res: Response) => {
   try {
+    console.log("👉 BODY:", req.body);
     const db = await openDb();
-    const { Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date } = req.body;
-    const sql = `INSERT INTO Employee (Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-    await db.run(sql, [Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date]);
+    const { 
+      Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date,
+      Personel_Type, Position_Level, Position_No 
+    } = req.body;
+    
+    const sql = `INSERT INTO Employee (
+                   Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date,
+                   Personel_Type, Position_Level, Position_No
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                 
+    await db.run(sql, [
+      Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date,
+      Personel_Type, Position_Level, Position_No
+    ]);
+    
     res.status(201).json({ message: "Added successfully" });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Add failed" });
   }
 });
@@ -48,14 +61,21 @@ app.post('/employees/add', async (req: Request, res: Response) => {
 app.post('/employees/update', async (req: Request, res: Response) => {
   try {
     const db = await openDb();
-    const { id, Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date } = req.body;
+    const { 
+      id, Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date,
+      Personel_Type, Position_Level, Position_No 
+    } = req.body;
     
     const sql = `UPDATE Employee 
                  SET Name = ?, Birthday = ?, Citizen_id = ?, Tel = ?, 
-                     Department = ?, Division = ?, Position = ?, Entry_Date = ? 
+                     Department = ?, Division = ?, Position = ?, Entry_Date = ?,
+                     Personel_Type = ?, Position_Level = ?, Position_No = ?
                  WHERE id = ?`;
     
-    const result = await db.run(sql, [Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date, id]);
+    const result = await db.run(sql, [
+      Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date, 
+      Personel_Type, Position_Level, Position_No, id
+    ]);
     
     if (result.changes && result.changes > 0) {
       res.json({ message: "Updated successfully" });
@@ -63,6 +83,7 @@ app.post('/employees/update', async (req: Request, res: Response) => {
       res.status(404).json({ error: "Employee not found" });
     }
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Update failed" });
   }
 });
