@@ -687,7 +687,7 @@ const Emp: React.FC = () => {
                     ระดับ {sortConfig.key === 'Level' ? (sortConfig.direction === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>) : <ArrowUpDown size={12}/>}
                   </div>
                 </th>
-                <th className="px-6 py-6">ตำแหน่งงาน / สังกัด</th>
+                <th className="px-6 py-6">ตำแหน่งงาน / ฝ่าย / แผนก</th>
                 <th 
                   className="px-6 py-6 text-center cursor-pointer hover:bg-slate-100/50 transition-colors"
                   onClick={() => handleSort('Gen')}
