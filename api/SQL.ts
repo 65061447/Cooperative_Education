@@ -30,24 +30,27 @@ app.get('/employees', async (req: Request, res: Response) => {
   }
 });
 
-// ADD NEW
+// ADD NEW (เพิ่ม Assign_Task, Actual_Task, Status)
 app.post('/employees/add', async (req: Request, res: Response) => {
   try {
     console.log("👉 BODY:", req.body);
     const db = await openDb();
     const { 
       Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date,
-      Personel_Type, Position_Level, Position_No 
+      Personel_Type, Position_Level, Position_No, 
+      Assign_Task, Actual_Task, Status // รับค่าเพิ่ม 3 ฟิลด์
     } = req.body;
     
     const sql = `INSERT INTO Employee (
                    Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date,
-                   Personel_Type, Position_Level, Position_No
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                   Personel_Type, Position_Level, Position_No,
+                   Assign_Task, Actual_Task, Status
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`; // เพิ่ม ? อีก 3 ตัว
                  
     await db.run(sql, [
       Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date,
-      Personel_Type, Position_Level, Position_No
+      Personel_Type, Position_Level, Position_No,
+      Assign_Task, Actual_Task, Status // ส่งค่าเพิ่มเข้าไปใน Array
     ]);
     
     res.status(201).json({ message: "Added successfully" });
@@ -57,24 +60,27 @@ app.post('/employees/add', async (req: Request, res: Response) => {
   }
 });
 
-// UPDATE (No :id in URL)
+// UPDATE (เพิ่ม Assign_Task, Actual_Task, Status)
 app.post('/employees/update', async (req: Request, res: Response) => {
   try {
     const db = await openDb();
     const { 
       id, Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date,
-      Personel_Type, Position_Level, Position_No 
+      Personel_Type, Position_Level, Position_No,
+      Assign_Task, Actual_Task, Status // รับค่าเพิ่ม 3 ฟิลด์
     } = req.body;
     
     const sql = `UPDATE Employee 
                  SET Name = ?, Birthday = ?, Citizen_id = ?, Tel = ?, 
                      Department = ?, Division = ?, Position = ?, Entry_Date = ?,
-                     Personel_Type = ?, Position_Level = ?, Position_No = ?
-                 WHERE id = ?`;
+                     Personel_Type = ?, Position_Level = ?, Position_No = ?,
+                     Assign_Task = ?, Actual_Task = ?, Status = ?
+                 WHERE id = ?`; // เพิ่ม SET ฟิลด์ใหม่ 3 ตัวก่อน WHERE
     
     const result = await db.run(sql, [
       Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date, 
-      Personel_Type, Position_Level, Position_No, id
+      Personel_Type, Position_Level, Position_No,
+      Assign_Task, Actual_Task, Status, id // ส่งค่าเพิ่มเข้าไปใน Array
     ]);
     
     if (result.changes && result.changes > 0) {
