@@ -90,7 +90,7 @@
     const [searchDivision, setSearchDivision] = useState("all");
     const [searchDepartment, setSearchDepartment] = useState("all");
     const [searchPersonelType, setSearchPersonelType] = useState("all");
-    const [searchStatus, setSearchStatus] = useState("all"); // New search state
+    const [searchStatus, setSearchStatus] = useState("all");
 
     // --- ACTIVE FILTERS (LOGIC) ---
     const [activeFilters, setActiveFilters] = useState({
@@ -100,10 +100,10 @@
       division: "all",
       department: "all",
       personelType: "all",
-      status: "all" // New active filter
+      status: "all"
     });
     
-    // --- FORM DATA STATE ---
+    // --- FORM DATA STATE (SET TO ACTIVE BY DEFAULT) ---
     const [formData, setFormData] = useState<Employee>({
       Name: "", 
       Citizen_id: "", 
@@ -121,12 +121,12 @@
       Status: "Active" 
     });
 
-    // --- SORTING STATE ---
+    // --- SORTING STATE (SET TO POSITION_NO ASC BY DEFAULT) ---
     const [sortConfig, setSortConfig] = useState<{ 
-      key: 'Entry_Date' | 'Gen' | 'Level' | 'id', 
+      key: 'Entry_Date' | 'Gen' | 'Level' | 'id' | 'Position_No', 
       direction: 'asc' | 'desc' 
     }>({
-      key: 'id',
+      key: 'Position_No',
       direction: 'asc'
     });
 
@@ -206,7 +206,7 @@
     /**
      * จัดการการสลับลำดับการเรียงข้อมูล
      */
-    const handleSort = (key: 'Entry_Date' | 'Gen' | 'Level') => {
+    const handleSort = (key: 'Entry_Date' | 'Gen' | 'Level' | 'Position_No') => {
       let direction: 'asc' | 'desc' = 'asc';
       if (sortConfig.key === key && sortConfig.direction === 'asc') {
         direction = 'desc';
@@ -330,7 +330,7 @@
         personelType: "all",
         status: "all"
       });
-      setSortConfig({ key: 'id', direction: 'asc' });
+      setSortConfig({ key: 'Position_No', direction: 'asc' });
     };
 
     const filteredEmployees = useMemo(() => {
@@ -367,6 +367,10 @@
           const priorityA = getLevelPriority(a.Position_Level);
           const priorityB = getLevelPriority(b.Position_Level);
           return sortConfig.direction === 'asc' ? priorityA - priorityB : priorityB - priorityA;
+        } else if (sortConfig.key === 'Position_No') {
+          const valA = parseInt(a.Position_No) || 0;
+          const valB = parseInt(b.Position_No) || 0;
+          return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
         } else {
           const idA = a.id || 0;
           const idB = b.id || 0;
@@ -622,7 +626,7 @@
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-slate-100 shadow-xl">
                             <SelectItem value="Active" >🟢 Active</SelectItem>
-                            <SelectItem value="InActive" >🔴 InActive</SelectItem>
+                            <SelectItem value="InActive">🔴 InActive</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -738,7 +742,6 @@
                   </SelectContent>
                 </Select>
               </div>
-              {/* --- ADDED STATUS DROPDOWN --- */}
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1"><Activity size={12} /> สถานะ</Label>
                 <Select value={searchStatus} onValueChange={setSearchStatus}>
@@ -757,25 +760,26 @@
             </div>
           </div>
 
-          {/* --- MAIN DATA TABLE SECTION (Tightened gap between ตำแหน่ง and ภาระกรอบ) --- */}
+          {/* --- MAIN DATA TABLE SECTION --- */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden text-[16px]">
             <table className="w-full text-left border-collapse table-fixed">
               <thead className="bg-slate-50/50 text-[#334e5e] text-[11px] font-black uppercase tracking-tighter">
                 <tr>
                   <th className="w-[40px] px-2 py-2 text-center">No.</th>
-                  <th className="w-[125px] px-10 py-2">ชื่อ / ประเภท</th>
-                  <th className="w-[70px] px-2 py-2 text-center">เลขตำแหน่ง</th>
+                  <th className="w-[150px] px-10 py-2">ชื่อ / ประเภท</th>
+                  <th className="w-[70px] px-2 py-2 text-center cursor-pointer transition-colors hover:bg-slate-100/50" onClick={() => handleSort('Position_No')}>
+                    <div className="flex items-center justify-center gap-1">
+                      เลขตำแหน่ง {sortConfig.key === 'Position_No' ? (sortConfig.direction === 'asc' ? <ChevronUp size={10}/> : <ChevronDown size={10}/>) : <ArrowUpDown size={10}/>}
+                    </div>
+                  </th>
                   <th className="w-[120px] px-2 py-2 text-center cursor-pointer transition-colors hover:bg-slate-100/50" onClick={() => handleSort('Level')}>
                     <div className="flex items-center justify-center gap-1">
                       ระดับ {sortConfig.key === 'Level' ? (sortConfig.direction === 'asc' ? <ChevronUp size={10}/> : <ChevronDown size={10}/>) : <ArrowUpDown size={10}/>}
                     </div>
                   </th>
-                  
-                  {/* FIXED WIDTH APPLIED HERE TO REMOVE SPACE */}
-                  <th className="w-[90px] px-2 py-2">ตำแหน่ง/ฝ่าย</th>
+                  <th className="w-[150px] px-2 py-2">ตำแหน่ง/ฝ่าย</th>
                   <th className="w-[65px] px-1 py-2 text-center whitespace-nowrap">ตามกรอบ</th>
                   <th className="w-[65px] px-1 py-2 text-center whitespace-nowrap">ตามจริง</th>
-                  
                   <th className="w-[100px] px-2 py-2 text-center cursor-pointer transition-colors hover:bg-slate-100/50" onClick={() => handleSort('Gen')}>
                     <div className="flex items-center justify-center gap-1">
                       Gen {sortConfig.key === 'Gen' ? (sortConfig.direction === 'asc' ? <ChevronUp size={10}/> : <ChevronDown size={10}/>) : <ArrowUpDown size={10}/>}
@@ -812,17 +816,13 @@
                         <td className="px-2 py-2 text-center font-black text-slate-300 text-[11px]">
                           {(idx + 1).toString().padStart(2, '0')}
                         </td>
-                        
                         <td className="px-2 py-2">
                           <div className="flex items-center gap-2 truncate">
                             <div className="w-8 h-8 rounded-lg bg-[#d4c391]/10 flex items-center justify-center text-[#d4c391] shrink-0">
                               <User size={15} />
                             </div>
                             <div className="truncate min-w-0">
-                              <button 
-                                onClick={() => handleOpenEdit(emp)} 
-                                className="font-bold text-[#334e5e] hover:text-[#d4c391] transition-colors text-left truncate block w-full text-[13px]"
-                              >
+                              <button onClick={() => handleOpenEdit(emp)} className="font-bold text-[#334e5e] hover:text-[#d4c391] transition-colors text-left truncate block w-full text-[13px]">
                                 {emp.Name}
                               </button>
                               <span className="text-[8.5px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-sm uppercase tracking-tighter inline-block">
@@ -831,73 +831,53 @@
                             </div>
                           </div>
                         </td>
-
                         <td className="px-2 py-2 text-center">
                           <span className="font-mono font-bold text-[#d4c391] text-[11px]">{emp.Position_No || "-"}</span>
                         </td>
-
                         <td className="px-2 py-2 text-center">
                           <div className={`inline-flex items-center gap-1 text-[8.5px] font-black px-2 py-0.5 rounded-full border uppercase tracking-tighter ${levelStyle.color}`}>
                             {levelStyle.icon} {emp.Position_Level || "-"}
                           </div>
                         </td>
-
                         <td className="px-2 py-2">
                           <div className="font-bold text-slate-600 truncate text-[12px]">{emp.Position}</div>
-                          <div className="text-[8.5px] text-slate-400 uppercase tracking-tighter truncate">
+                          <div className="text-[8.5px] text-slate-400 uppercase tracking-tighter">
                             {emp.Division || "-"} / {emp.Department || "-"}
                           </div>
                         </td>
-
                         <td className="px-1 py-2 text-center">
                           <div className="text-[8.5px] font-black text-blue-600 bg-blue-50 px-1 rounded border border-blue-100 inline-block min-w-[20px]">
                             {emp.Assign_Task || "0"}
                           </div>
                         </td>
-
                         <td className="px-1 py-2 text-center">
                           <div className="text-[8.5px] font-black text-red-600 bg-red-50 px-1 rounded border border-red-100 inline-block min-w-[20px]">
                             {emp.Actual_Task || "0"}
                           </div>
                         </td>
-
                         <td className="px-2 py-2 text-center">
                           <div className="flex flex-col items-center gap-2">
                             <span className="font-bold text-slate-500 text-[11px] tracking-tighter">{formatToBEText(emp.Birthday)}</span>
                             {gen && <span className={`px-2 py-0.5 text-[9px] font-black rounded tracking-tight leading-none ${gen.color}`}>{gen.label}</span>}
                           </div>
                         </td>
-
                         <td className="px-2 py-2 text-center font-black text-slate-600 text-[11px]">
                           {emp.Tel || "-"}
                         </td>
-
                         <td className="px-2 py-2 text-center">
                           <span className={`px-1.5 py-0.5 rounded-sm text-[8.5px] font-black border uppercase tracking-tighter ${emp.Status === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-500 border-rose-100'}`}>
                             {emp.Status || "Active"}
                           </span>
                         </td>
-
                         <td className="px-2 py-2 text-right">
                           <span className="font-black text-[#d4c391] text-[11px]">{formatToBEText(emp.Entry_Date)}</span>
                         </td>
-
                         <td className="px-2 py-2 text-center">
-                          <div className="flex justify-center gap-1  group-hover:opacity-100 transition-all duration-300">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleOpenEdit(emp)} 
-                              className="h-7 w-7 text-blue-500 hover:bg-blue-50 hover:text-blue-600"
-                            >
+                          <div className="flex justify-center gap-1 group-hover:opacity-100 transition-all duration-300">
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(emp)} className="h-7 w-7 text-blue-500 hover:bg-blue-50 hover:text-blue-600">
                               <Pencil size={14} />
                             </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} 
-                              className="h-7 w-7 text-rose-400 hover:bg-rose-50 hover:text-rose-500"
-                            >
+                            <Button variant="ghost" size="icon" onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} className="h-7 w-7 text-rose-400 hover:bg-rose-50 hover:text-rose-500">
                               <Trash2 size={14} />
                             </Button>
                           </div>
