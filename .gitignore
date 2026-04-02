@@ -7,6 +7,12 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+
+dist_electron/
+dist/
+node_modules/
+*.exe
+*.asar
 node_modules
 dist
 dist-ssr

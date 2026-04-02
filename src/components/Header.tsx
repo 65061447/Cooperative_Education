@@ -109,21 +109,21 @@ const Header = () => {
                         <DropdownMenuPortal>
                           <DropdownMenuSubContent className="w-[420px] bg-white p-1 shadow-2xl border-slate-100">
                             <DropdownMenuItem className="p-0">
-                              <Link 
+                              {/* <Link 
                                 to="/graph" 
                                 className="w-full h-full py-4 px-5 text-[#334e5e] font-medium leading-relaxed block hover:bg-slate-100 transition-colors"
                               >
                                 ส่วนที่ 1 สถิติการประสบอันตรายหรือเจ็บป่วยเนื่องจากการทำงานภาพรวมทั่วประเทศ
-                              </Link>
+                              </Link> */}
                             </DropdownMenuItem>
                             
                             <DropdownMenuItem className="p-0">
-                              <Link 
+                              {/* <Link 
                                 to="/graph2568" 
                                 className="w-full h-full py-4 px-5 text-[#334e5e] font-medium leading-relaxed block hover:bg-slate-100 transition-colors"
                               >
                                 ส่วนที่ 2 2568
-                              </Link>
+                              </Link> */}
                             </DropdownMenuItem>
                           </DropdownMenuSubContent>
                         </DropdownMenuPortal>
@@ -153,9 +153,9 @@ const Header = () => {
                           บุคลากร
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer py-3 px-4 text-[#334e5e] hover:bg-slate-50">
+                      {/* <DropdownMenuItem className="cursor-pointer py-3 px-4 text-[#334e5e] hover:bg-slate-50">
                         โครงสร้างองค์กร
-                      </DropdownMenuItem>
+                      </DropdownMenuItem> */}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 );
