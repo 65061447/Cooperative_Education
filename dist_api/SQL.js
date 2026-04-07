@@ -53,18 +53,12 @@ const helmet_1 = __importDefault(require("helmet"));
 const path = __importStar(require("path"));
 const fs_1 = __importDefault(require("fs"));
 /**
- * STRICT TYPE ENVIRONMENT ADAPTATION
- * We avoid 'import.meta.url' to prevent TS compiler errors.
- * Instead, we use process.cwd() which is the project root
- * where you are running your npm commands.
+ * DETERMINING DIRECTORY
  */
 const getSafeDirname = () => {
-    // 1. If we are in CommonJS (Electron Production), __dirname is global
     if (typeof __dirname !== 'undefined') {
         return __dirname;
     }
-    // 2. Local Dev Fallback: Create the path to the 'api' folder manually
-    // process.cwd() returns C:\Users\Asus\Desktop\Sso\Cooperative_Education
     return path.join(process.cwd(), 'api');
 };
 const _dirname = getSafeDirname();
@@ -74,20 +68,26 @@ app.use((0, cors_1.default)());
 app.use((0, helmet_1.default)());
 app.use(express_1.default.json());
 /**
- * DATABASE PATH LOGIC
+ * DATABASE PATH LOGIC (UPDATED FOR PRODUCTION)
  */
 const getDbPath = () => {
-    // 1. Production: Path sent by main.cjs via Environment Variable
+    // 1. Check for Environment Variable (Passed from Electron Main)
     if (process.env.DB_PATH) {
         return process.env.DB_PATH;
     }
-    // 2. Development: Look for the DB in the project root
+    // 2. Production Check: When packaged, files move to 'resources' folder
+    // We check if we are inside 'win-unpacked' or an installed directory
+    const prodPath = path.join(process.cwd(), 'resources', 'mydb');
+    if (fs_1.default.existsSync(prodPath)) {
+        return prodPath;
+    }
+    // 3. Development: Look for the DB in the project root
     const devPathExt = path.join(_dirname, '../mydb.db');
     const devPath = path.join(_dirname, '../mydb');
     return fs_1.default.existsSync(devPathExt) ? devPathExt : devPath;
 };
 const dbPath = getDbPath();
-// Explicitly typed DB opener (No 'any')
+// Explicitly typed DB opener
 const openDb = () => __awaiter(void 0, void 0, void 0, function* () {
     return (0, sqlite_1.open)({
         filename: dbPath,
@@ -119,14 +119,14 @@ app.post('/employees/add', (req, res) => __awaiter(void 0, void 0, void 0, funct
     let db = null;
     try {
         db = yield openDb();
-        const { Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date, Personel_Type, Position_Level, Position_No, Assign_Task, Actual_Task, Status } = req.body;
+        const { Name, Birthday, Citizen_id, Tel, Position, Entry_Date, Personel_Type, Position_Level, Position_No, Assign_Task, Actual_Task, Status } = req.body;
         const sql = `INSERT INTO Employee (
-                    Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date,
+                    Name, Birthday, Citizen_id, Tel, Position, Entry_Date,
                     Personel_Type, Position_Level, Position_No,
                     Assign_Task, Actual_Task, Status
-                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         yield db.run(sql, [
-            Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date,
+            Name, Birthday, Citizen_id, Tel, Position, Entry_Date,
             Personel_Type, Position_Level, Position_No,
             Assign_Task, Actual_Task, Status
         ]);
@@ -146,15 +146,15 @@ app.post('/employees/update', (req, res) => __awaiter(void 0, void 0, void 0, fu
     let db = null;
     try {
         db = yield openDb();
-        const { id, Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date, Personel_Type, Position_Level, Position_No, Assign_Task, Actual_Task, Status } = req.body;
+        const { id, Name, Birthday, Citizen_id, Tel, Position, Entry_Date, Personel_Type, Position_Level, Position_No, Assign_Task, Actual_Task, Status } = req.body;
         const sql = `UPDATE Employee 
                   SET Name = ?, Birthday = ?, Citizen_id = ?, Tel = ?, 
-                      Department = ?, Division = ?, Position = ?, Entry_Date = ?,
+                      Position = ?, Entry_Date = ?,
                       Personel_Type = ?, Position_Level = ?, Position_No = ?,
                       Assign_Task = ?, Actual_Task = ?, Status = ?
                   WHERE id = ?`;
         const result = yield db.run(sql, [
-            Name, Birthday, Citizen_id, Tel, Department, Division, Position, Entry_Date,
+            Name, Birthday, Citizen_id, Tel, Position, Entry_Date,
             Personel_Type, Position_Level, Position_No,
             Assign_Task, Actual_Task, Status, id
         ]);

@@ -1,0 +1,7 @@
+{
+  "pkg": {
+    "assets": [
+      "node_modules/sqlite3/lib/binding/napi-v6-win32-x64/node_sqlite3.node"
+    ]
+  }
+}

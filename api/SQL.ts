@@ -8,19 +8,12 @@ import * as path from 'path';
 import fs from 'fs';
 
 /**
- * STRICT TYPE ENVIRONMENT ADAPTATION
- * We avoid 'import.meta.url' to prevent TS compiler errors.
- * Instead, we use process.cwd() which is the project root 
- * where you are running your npm commands.
+ * DETERMINING DIRECTORY
  */
 const getSafeDirname = (): string => {
-  // 1. If we are in CommonJS (Electron Production), __dirname is global
   if (typeof __dirname !== 'undefined') {
     return __dirname;
   }
-  
-  // 2. Local Dev Fallback: Create the path to the 'api' folder manually
-  // process.cwd() returns C:\Users\Asus\Desktop\Sso\Cooperative_Education
   return path.join(process.cwd(), 'api');
 };
 
@@ -33,15 +26,22 @@ app.use(helmet());
 app.use(express.json());
 
 /**
- * DATABASE PATH LOGIC
+ * DATABASE PATH LOGIC (UPDATED FOR PRODUCTION)
  */
 const getDbPath = (): string => {
-  // 1. Production: Path sent by main.cjs via Environment Variable
+  // 1. Check for Environment Variable (Passed from Electron Main)
   if (process.env.DB_PATH) {
     return process.env.DB_PATH;
   }
 
-  // 2. Development: Look for the DB in the project root
+  // 2. Production Check: When packaged, files move to 'resources' folder
+  // We check if we are inside 'win-unpacked' or an installed directory
+  const prodPath = path.join(process.cwd(), 'resources', 'mydb');
+  if (fs.existsSync(prodPath)) {
+    return prodPath;
+  }
+
+  // 3. Development: Look for the DB in the project root
   const devPathExt = path.join(_dirname, '../mydb.db');
   const devPath = path.join(_dirname, '../mydb');
   
@@ -50,7 +50,7 @@ const getDbPath = (): string => {
 
 const dbPath = getDbPath();
 
-// Explicitly typed DB opener (No 'any')
+// Explicitly typed DB opener
 const openDb = async (): Promise<Database<sqlite3.Database, sqlite3.Statement>> => {
   return open({
     filename: dbPath,

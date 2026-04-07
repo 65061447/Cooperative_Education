@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { 
   LayoutDashboard, 
   PlusCircle, 
@@ -31,7 +31,16 @@ import {
   Zap, 
   Medal,
   Activity,
-  Fingerprint
+  Fingerprint,
+  Monitor,
+  Terminal,
+  Code,
+  Cpu,
+  Shield,
+  Database,
+  Settings,
+  Wrench,
+  FileText
 } from "lucide-react";
 
 import Header from "@/components/Header";
@@ -49,6 +58,10 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+
+// --- PDF LIBRARIES ---
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 /**
  * Interface สำหรับข้อมูลพนักงาน
@@ -73,6 +86,9 @@ interface Employee {
 }
 
 const Emp: React.FC = () => {
+  // --- REF FOR PDF CAPTURE (ADD THIS TO PRESERVE THAI) ---
+  const tableRef = useRef<HTMLDivElement>(null);
+
   // ---------------------------------------------------------
   // --- STATE MANAGEMENT ---
   // ---------------------------------------------------------
@@ -136,75 +152,143 @@ const Emp: React.FC = () => {
   /**
    * กำหนดสีและ Icon ตามระดับตำแหน่ง
    */
-  const getLevelStyle = (level: string) => {
-    const l = level?.trim() || "";
-    if (l.includes("เชี่ยวชาญ") || l.includes("ทรงคุณวุฒิ")) {
-      return {
-        color: "bg-amber-50 text-amber-600 border-amber-200",
-        icon: <Star size={12} className="text-amber-500" />
-      };
-    }
-    if (l.includes("ชำนาญการพิเศษ")) {
-      return {
-        color: "bg-orange-50 text-orange-600 border-orange-200",
-        icon: <Award size={12} className="text-orange-500" />
-      };
-    }
-    if (l.includes("ชำนาญการ")) {
-      return {
-        color: "bg-sky-50 text-sky-600 border-sky-200",
-        icon: <ShieldCheck size={12} className="text-sky-500" />
-      };
-    }
-    if (l.includes("ปฏิบัติการ")) {
-      return {
-        color: "bg-emerald-50 text-emerald-600 border-emerald-200",
-        icon: <Zap size={12} className="text-emerald-500" />
-      };
-    }
-    if (l.includes("อาวุโส")) {
-      return {
-        color: "bg-violet-50 text-violet-600 border-violet-200",
-        icon: <Award size={12} className="text-violet-500" />
-      };
-    }
-    if (l.includes("ชำนาญงาน")) {
-      return {
-        color: "bg-indigo-50 text-indigo-600 border-indigo-200",
-        icon: <Medal size={12} className="text-indigo-500" />
-      };
-    }
-    if (l.includes("ปฏิบัติงาน")) {
-      return {
-        color: "bg-slate-50 text-slate-600 border-slate-200",
-        icon: <Zap size={12} className="text-slate-500" />
-      };
-    }
-    return {
-      color: "bg-slate-100 text-slate-500 border-slate-200",
-      icon: <Award size={12} />
+const getLevelStyle = (level) => {
+  const l = level?.trim() || "";
+
+  // --- SSO Level Specific Badges ---
+  if (l.includes("4")) {
+    return { 
+      color: "border-indigo-400 bg-indigo-100 text-indigo-900 font-black ring-1 ring-indigo-300 shadow-sm", 
+      icon: <Shield size={10} className="text-indigo-600" /> 
     };
-  };
+  }
+  if (l.includes("3")) {
+    return { 
+      color: "border-indigo-200 bg-indigo-50 text-indigo-800 font-bold", 
+      icon: <Shield size={10} className="text-indigo-500" /> 
+    };
+  }
+  if (l.includes("2")) {
+    return { 
+      color: "border-blue-200 bg-blue-50 text-blue-800 font-bold", 
+      icon: <Shield size={10} className="text-blue-500" /> 
+    };
+  }
+  if (l.includes("1")) {
+    return { 
+      color: "border-blue-100 bg-blue-50/50 text-blue-700", 
+      icon: <Shield size={10} className="text-blue-400" /> 
+    };
+  }
 
-  const getLevelPriority = (level: string) => {
-    const l = level?.trim() || "";
-    if (l.includes("ทรงคุณวุฒิ")) return 11;
-    if (l.includes("เชี่ยวชาญ")) return 10;
-    if (l.includes("ชำนาญการพิเศษ")) return 9;
-    if (l.includes("ชำนาญการ")) return 8;
-    if (l.includes("ปฏิบัติการ")) return 7;
-    if (l.includes("อาวุโส")) return 6;
-    if (l.includes("ชำนาญงาน")) return 5;
-    if (l.includes("ปฏิบัติงาน")) return 4;
-    return 0;
-  };
+  // --- Standard Position Styles ---
+  switch (level) {
+    case 'บริหารสูง':
+      return { color: "border-purple-200 bg-purple-50 text-purple-700 font-black shadow-sm", icon: <LayoutDashboard size={10} className="text-purple-500" /> };
+    case 'บริหารต้น':
+      return { color: "border-purple-100 bg-purple-50/50 text-purple-600", icon: <LayoutDashboard size={10} /> };
 
-  const handleSort = (key: 'Entry_Date' | 'Gen' | 'Level' | 'Position_No') => {
+    case 'อำนวยการสูง':
+      return { color: "border-amber-200 bg-amber-50 text-amber-700 font-black shadow-sm", icon: <Monitor size={10} className="text-amber-600" /> };
+    case 'อำนวยการต้น':
+      return { color: "border-amber-100 bg-amber-50/50 text-amber-600", icon: <Monitor size={10} /> };
+
+    case 'เชี่ยวชาญ': 
+      return { color: "border-rose-200 bg-rose-50 text-rose-700 font-black", icon: <Shield size={10} className="text-rose-500" /> };
+
+    case 'ชำนาญการพิเศษ': 
+      return { color: "border-blue-200 bg-blue-50 text-blue-700", icon: <Terminal size={10} className="text-blue-500" /> };
+
+    case 'ชำนาญการ': 
+      return { color: "border-emerald-200 bg-emerald-50 text-emerald-700", icon: <Code size={10} className="text-emerald-500" /> };
+
+    case 'ปฏิบัติการ': 
+      return { color: "border-slate-200 bg-slate-50 text-slate-600", icon: <Cpu size={10} className="text-slate-400" /> };
+
+    case 'อาวุโส':
+      return { color: "border-cyan-200 bg-cyan-50 text-cyan-700", icon: <Database size={10} className="text-cyan-500" /> };
+    case 'ชำนาญงาน':
+      return { color: "border-slate-200 bg-slate-50 text-slate-500", icon: <Settings size={10} /> };
+    case 'ปฏิบัติงาน':
+      return { color: "border-slate-100 bg-slate-50/30 text-slate-400", icon: <Wrench size={10} /> };
+
+    default:
+      return { color: "border-slate-100 bg-slate-50 text-slate-500", icon: <Activity size={10} /> };
+  }
+};
+const getLevelPriority = (level) => {
+  const l = level?.trim() || "";
+
+  // --- Tier 1: Top Management (SSO 4 / C10-C11) ---
+  if (l.includes("4")) return 17;
+  if (l.includes("บริหารสูง")) return 16;
+  if (l.includes("ทรงคุณวุฒิ")) return 15;
+
+  // --- Tier 2: Senior Management & Expert (SSO 3 / C9) ---
+  if (l.includes("3")) return 14; 
+  if (l.includes("บริหารต้น")) return 14;
+  if (l.includes("อำนวยการสูง")) return 13;
+  if (l.includes("เชี่ยวชาญ")) return 12;
+
+  // --- Tier 3: Middle Management (SSO 2 / C8) ---
+  if (l.includes("2")) return 11;
+  if (l.includes("อำนวยการต้น")) return 11;
+  if (l.includes("ชำนาญการพิเศษ")) return 10;
+  if (l.includes("ส.4")) return 10;
+
+  // --- Tier 4: Professional (SSO 1 / C6-C7) ---
+  if (l.includes("1")) return 9;
+  if (l.includes("ชำนาญการ")) return 9;
+  
+  // --- Tier 5: Practitioner ---
+  if (l.includes("ปฏิบัติการ")) return 8;
+
+  // --- Tier 6: General Track ---
+  if (l.includes("ทักษะพิเศษ")) return 7;
+  if (l.includes("อาวุโส")) return 6;
+  if (l.includes("ชำนาญงาน")) return 5;
+  if (l.includes("ปฏิบัติงาน")) return 4;
+
+  return 0;
+};
+
+  const handleSort = (key: 'Entry_Date' | 'Gen' | 'Level' | 'id' | 'Position_No') => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
+  };
+
+  // ---------------------------------------------------------
+  // --- HELPERS: PDF GENERATION (Thai Character Support) ---
+  // ---------------------------------------------------------
+
+  const exportToPDF = async () => {
+    if (!tableRef.current) return;
+    setIsLoading(true);
+
+    try {
+      // Capture the table as an image to preserve Thai characters perfectly
+      const canvas = await html2canvas(tableRef.current, {
+        scale: 2, // High resolution
+        useCORS: true,
+        backgroundColor: "#ffffff"
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("l", "mm", "a4");
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
+      pdf.save("Employee_Report_Thai.pdf");
+    } catch (error) {
+      console.error("PDF Export Error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // ---------------------------------------------------------
@@ -745,8 +829,8 @@ const Emp: React.FC = () => {
           </div>
         </div>
 
-        {/* --- MAIN DATA TABLE SECTION --- */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-hidden">
+        {/* --- MAIN DATA TABLE SECTION (ADDED REF HERE) --- */}
+        <div ref={tableRef} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-hidden">
           <table className="w-full text-left border-collapse table-fixed">
             <thead className="bg-slate-50/50 text-[#334e5e] text-[10px] font-black uppercase tracking-tighter">
               <tr>
@@ -899,9 +983,18 @@ const Emp: React.FC = () => {
 
         {/* --- SUMMARY INFO FOOTER --- */}
         <div className="mt-4 flex justify-between items-center px-2">
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-            Total Personnel: <span className="text-[#334e5e]">{filteredEmployees.length}</span> Records
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+              Total Personnel: <span className="text-[#334e5e]">{filteredEmployees.length}</span> Records
+            </p>
+            <Button 
+              onClick={exportToPDF}
+              variant="outline" 
+              className="h-8 px-4 rounded-lg border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 text-[9px] font-black uppercase flex items-center gap-2 transition-all active:scale-95"
+            >
+              <FileText size={12} /> Save to PDF (Thai Support)
+            </Button>
+          </div>
           <div className="flex gap-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
