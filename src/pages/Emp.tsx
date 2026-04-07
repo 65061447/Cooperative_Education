@@ -774,7 +774,7 @@ const getLevelPriority = (level) => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1"><Briefcase size={12} /> ตำแหน่ง</Label>
+              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-cent gap-1"><Briefcase size={12} /> ตำแหน่ง</Label>
               <Select value={searchPosition} onValueChange={setSearchPosition}>
                 <SelectTrigger className="h-11 rounded-xl bg-slate-50/30 border-slate-100 text-[#334e5e] font-medium"><SelectValue placeholder="ทุกตำแหน่ง" /></SelectTrigger>
                 <SelectContent className="rounded-xl border-slate-100 shadow-xl">
@@ -835,14 +835,14 @@ const getLevelPriority = (level) => {
             <thead className="bg-slate-50/50 text-[#334e5e] text-[10px] font-black uppercase tracking-tighter">
               <tr>
                 <th className="w-[30px] px-1 py-3 text-center">#</th>
-                <th className="w-[125px] px-2 py-3">ชื่อ / ประเภท</th>
+                <th className="w-[181px] px-10 py-3">ชื่อ / ประเภท</th>
                 <th className="w-[100px] px-1 py-3 text-center">IdCard</th>
                 <th className="w-[60px] px-1 py-3 text-center cursor-pointer transition-colors hover:bg-slate-100/50" onClick={() => handleSort('Position_No')}>
                   <div className="flex items-center justify-center gap-1">
                     เลขตำแหน่ง {sortConfig.key === 'Position_No' ? (sortConfig.direction === 'asc' ? <ChevronUp size={8}/> : <ChevronDown size={8}/>) : <ArrowUpDown size={8}/>}
                   </div>
                 </th>
-                <th className="w-[135px] px-2 py-3">ตำแหน่ง</th>
+                <th className="w-[135px] px-6 py-3 ">ตำแหน่ง</th>
                 <th className="w-[85px] px-1 py-3 text-center cursor-pointer transition-colors hover:bg-slate-100/50" onClick={() => handleSort('Level')}>
                   <div className="flex items-center justify-center gap-1">
                     ระดับ {sortConfig.key === 'Level' ? (sortConfig.direction === 'asc' ? <ChevronUp size={8}/> : <ChevronDown size={8}/>) : <ArrowUpDown size={8}/>}
