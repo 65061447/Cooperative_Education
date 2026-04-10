@@ -21,7 +21,8 @@
     "noImplicitAny": false,
     "noFallthroughCasesInSwitch": false,
 
-    "baseUrl": ".",
+    /* Fixed Path Mapping */
+    "ignoreDeprecations": "5.0",
     "paths": {
       "@/*": ["./src/*"]
     }

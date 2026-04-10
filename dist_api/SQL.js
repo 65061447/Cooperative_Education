@@ -46,89 +46,129 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const sqlite3_1 = __importDefault(require("sqlite3"));
-const sqlite_1 = require("sqlite");
+const promise_1 = __importDefault(require("mysql2/promise"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const path = __importStar(require("path"));
 const fs_1 = __importDefault(require("fs"));
-/**
- * DETERMINING DIRECTORY
- */
-const getSafeDirname = () => {
-    if (typeof __dirname !== 'undefined') {
-        return __dirname;
-    }
-    return path.join(process.cwd(), 'api');
-};
-const _dirname = getSafeDirname();
 const app = (0, express_1.default)();
 const port = 3000;
 app.use((0, cors_1.default)());
 app.use((0, helmet_1.default)());
 app.use(express_1.default.json());
+const caPath = process.env.NODE_ENV === 'production'
+    ? path.join(process.resourcesPath, 'ca.pem')
+    : path.join(process.cwd(), 'ca.pem');
 /**
- * DATABASE PATH LOGIC (UPDATED FOR PRODUCTION)
+ * 2. DATABASE CONNECTION POOL (Aiven Cloud)
  */
-const getDbPath = () => {
-    // 1. Check for Environment Variable (Passed from Electron Main)
-    if (process.env.DB_PATH) {
-        return process.env.DB_PATH;
-    }
-    // 2. Production Check: When packaged, files move to 'resources' folder
-    // We check if we are inside 'win-unpacked' or an installed directory
-    const prodPath = path.join(process.cwd(), 'resources', 'mydb');
-    if (fs_1.default.existsSync(prodPath)) {
-        return prodPath;
-    }
-    // 3. Development: Look for the DB in the project root
-    const devPathExt = path.join(_dirname, '../mydb.db');
-    const devPath = path.join(_dirname, '../mydb');
-    return fs_1.default.existsSync(devPathExt) ? devPathExt : devPath;
-};
-const dbPath = getDbPath();
-// Explicitly typed DB opener
-const openDb = () => __awaiter(void 0, void 0, void 0, function* () {
-    return (0, sqlite_1.open)({
-        filename: dbPath,
-        driver: sqlite3_1.default.Database
-    });
+const pool = promise_1.default.createPool({
+    host: 'mysql-10dc6cc7-sso-work1.i.aivencloud.com',
+    port: 26522,
+    user: 'avnadmin',
+    password: 'AVNS_fGt0UHgX0OTgyCrISHw',
+    database: 'defaultdb',
+    ssl: {
+        ca: fs_1.default.readFileSync(caPath),
+        rejectUnauthorized: true
+    },
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
-// --- ROUTES ---
+/**
+ * 3. STRICTLY TYPED SANITIZATION HELPER
+ * Prevents "Incorrect integer value: ''" by converting empty inputs to null.
+ * Uses 'unknown' to avoid the 'any' keyword.
+ */
+const toNumOrNull = (value) => {
+    if (typeof value === 'number') {
+        return Number.isNaN(value) ? null : value;
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '')
+            return null;
+        const parsed = Number(trimmed);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+    return null;
+};
+/**
+ * 4. DATABASE INITIALIZATION
+ */
+function initializeDatabase() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield pool.query(`
+            CREATE TABLE IF NOT EXISTS Users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL
+            )
+        `);
+            yield pool.query(`
+            INSERT IGNORE INTO Users (username, password) 
+            VALUES ('admin', 'sso1234')
+        `);
+            console.log("✅ Database and Admin account are ready.");
+        }
+        catch (err) {
+            console.error("❌ Setup Error:", err);
+        }
+    });
+}
+// --- API ROUTES ---
+// LOGIN
+app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { username, password } = req.body;
+        const [rows] = yield pool.query('SELECT * FROM Users WHERE username = ? AND password = ?', [username, password]);
+        if (rows.length > 0) {
+            res.json({ success: true });
+        }
+        else {
+            res.status(401).json({ success: false });
+        }
+    }
+    catch (error) {
+        res.status(500).json({ success: false });
+    }
+}));
 // GET ALL EMPLOYEES
 app.get('/employees', (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    let db = null;
     try {
-        db = yield openDb();
-        const employees = yield db.all('SELECT * FROM Employee');
-        console.log(`📊 Rows fetched: ${employees.length}`);
-        res.json(employees);
+        const [rows] = yield pool.query('SELECT * FROM Employee');
+        console.log(`📊 Rows fetched from Cloud: ${rows.length}`);
+        res.json(rows);
     }
     catch (error) {
         console.error("❌ FETCH ERROR:", error);
-        const message = error instanceof Error ? error.message : "Unknown error";
-        res.status(500).json({ error: "Fetch failed: " + message });
-    }
-    finally {
-        if (db)
-            yield db.close();
+        res.status(500).json({ error: "Fetch failed" });
     }
 }));
-// ADD NEW EMPLOYEE
+// ADD EMPLOYEE
 app.post('/employees/add', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    let db = null;
     try {
-        db = yield openDb();
         const { Name, Birthday, Citizen_id, Tel, Position, Entry_Date, Personel_Type, Position_Level, Position_No, Assign_Task, Actual_Task, Status } = req.body;
         const sql = `INSERT INTO Employee (
                     Name, Birthday, Citizen_id, Tel, Position, Entry_Date,
                     Personel_Type, Position_Level, Position_No,
                     Assign_Task, Actual_Task, Status
                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        yield db.run(sql, [
-            Name, Birthday, Citizen_id, Tel, Position, Entry_Date,
-            Personel_Type, Position_Level, Position_No,
-            Assign_Task, Actual_Task, Status
+        yield pool.execute(sql, [
+            Name,
+            Birthday,
+            toNumOrNull(Citizen_id),
+            Tel,
+            Position,
+            Entry_Date,
+            Personel_Type,
+            Position_Level,
+            toNumOrNull(Position_No),
+            Assign_Task,
+            Actual_Task,
+            Status
         ]);
         res.status(201).json({ message: "Added successfully" });
     }
@@ -136,16 +176,10 @@ app.post('/employees/add', (req, res) => __awaiter(void 0, void 0, void 0, funct
         console.error("❌ ADD ERROR:", error);
         res.status(500).json({ error: "Add failed" });
     }
-    finally {
-        if (db)
-            yield db.close();
-    }
 }));
 // UPDATE EMPLOYEE
 app.post('/employees/update', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    let db = null;
     try {
-        db = yield openDb();
         const { id, Name, Birthday, Citizen_id, Tel, Position, Entry_Date, Personel_Type, Position_Level, Position_No, Assign_Task, Actual_Task, Status } = req.body;
         const sql = `UPDATE Employee 
                   SET Name = ?, Birthday = ?, Citizen_id = ?, Tel = ?, 
@@ -153,12 +187,22 @@ app.post('/employees/update', (req, res) => __awaiter(void 0, void 0, void 0, fu
                       Personel_Type = ?, Position_Level = ?, Position_No = ?,
                       Assign_Task = ?, Actual_Task = ?, Status = ?
                   WHERE id = ?`;
-        const result = yield db.run(sql, [
-            Name, Birthday, Citizen_id, Tel, Position, Entry_Date,
-            Personel_Type, Position_Level, Position_No,
-            Assign_Task, Actual_Task, Status, id
+        const [result] = yield pool.execute(sql, [
+            Name,
+            Birthday,
+            toNumOrNull(Citizen_id), // Sanitize to prevent 500 error
+            Tel,
+            Position,
+            Entry_Date,
+            Personel_Type,
+            Position_Level,
+            toNumOrNull(Position_No),
+            Assign_Task,
+            Actual_Task,
+            Status,
+            toNumOrNull(id)
         ]);
-        if (result.changes && result.changes > 0) {
+        if (result.affectedRows > 0) {
             res.json({ message: "Updated successfully" });
         }
         else {
@@ -169,19 +213,13 @@ app.post('/employees/update', (req, res) => __awaiter(void 0, void 0, void 0, fu
         console.error("❌ UPDATE ERROR:", error);
         res.status(500).json({ error: "Update failed" });
     }
-    finally {
-        if (db)
-            yield db.close();
-    }
 }));
 // DELETE EMPLOYEE
 app.post('/employees/delete', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    let db = null;
     try {
-        db = yield openDb();
         const { id } = req.body;
-        const result = yield db.run('DELETE FROM Employee WHERE id = ?', [id]);
-        if (result.changes && result.changes > 0) {
+        const [result] = yield pool.execute('DELETE FROM Employee WHERE id = ?', [toNumOrNull(id)]);
+        if (result.affectedRows > 0) {
             res.json({ message: "Deleted successfully" });
         }
         else {
@@ -192,13 +230,8 @@ app.post('/employees/delete', (req, res) => __awaiter(void 0, void 0, void 0, fu
         console.error("❌ DELETE ERROR:", error);
         res.status(500).json({ error: "Delete failed" });
     }
-    finally {
-        if (db)
-            yield db.close();
-    }
 }));
-// Server Initialization
 app.listen(port, () => {
     console.log(`🚀 API Server running at http://localhost:${port}`);
-    console.log(`📂 DB Location: ${dbPath}`);
+    initializeDatabase().catch(err => console.error("Initialization Failed:", err));
 });

@@ -1,6 +1,8 @@
 "use client";
 
+import Login from "@/components/Login";
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   PlusCircle, 
@@ -40,7 +42,8 @@ import {
   Database,
   Settings,
   Wrench,
-  FileText
+  FileText,
+  LogOut // Added for Logout
 } from "lucide-react";
 
 import Header from "@/components/Header";
@@ -60,8 +63,8 @@ import {
 } from "@/components/ui/select";
 
 // --- PDF LIBRARIES ---
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+// import jsPDF from "jspdf";
+// import html2canvas from "html2canvas";
 
 /**
  * Interface สำหรับข้อมูลพนักงาน
@@ -87,6 +90,7 @@ interface Employee {
 
 const Emp: React.FC = () => {
   // --- REF FOR PDF CAPTURE (ADD THIS TO PRESERVE THAI) ---
+  const navigate = useNavigate();
   const tableRef = useRef<HTMLDivElement>(null);
 
   // ---------------------------------------------------------
@@ -98,6 +102,7 @@ const Emp: React.FC = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   // --- SEARCH & FILTER STATES (UI) ---
@@ -144,6 +149,11 @@ const Emp: React.FC = () => {
     key: 'Position_No',
     direction: 'asc'
   });
+useEffect(() => {
+  const loginStatus = sessionStorage.getItem("isLoggedIn");
+  setIsLoggedIn(loginStatus === "true");
+}, []);
+
 
   // ---------------------------------------------------------
   // --- HELPERS: UI STYLING ---
@@ -264,32 +274,32 @@ const getLevelPriority = (level) => {
   // --- HELPERS: PDF GENERATION (Thai Character Support) ---
   // ---------------------------------------------------------
 
-  const exportToPDF = async () => {
-    if (!tableRef.current) return;
-    setIsLoading(true);
+  // const exportToPDF = async () => {
+  //   if (!tableRef.current) return;
+  //   setIsLoading(true);
 
-    try {
-      // Capture the table as an image to preserve Thai characters perfectly
-      const canvas = await html2canvas(tableRef.current, {
-        scale: 2, // High resolution
-        useCORS: true,
-        backgroundColor: "#ffffff"
-      });
+  //   try {
+  //     // Capture the table as an image to preserve Thai characters perfectly
+  //     const canvas = await html2canvas(tableRef.current, {
+  //       scale: 2, // High resolution
+  //       useCORS: true,
+  //       backgroundColor: "#ffffff"
+  //     });
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("l", "mm", "a4");
+  //     const imgData = canvas.toDataURL("image/png");
+  //     const pdf = new jsPDF("l", "mm", "a4");
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+  //     const pdfWidth = pdf.internal.pageSize.getWidth();
+  //     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
-      pdf.save("Employee_Report_Thai.pdf");
-    } catch (error) {
-      console.error("PDF Export Error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
+  //     pdf.save("Employee_Report_Thai.pdf");
+  //   } catch (error) {
+  //     console.error("PDF Export Error:", error);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   // ---------------------------------------------------------
   // --- DATA TRANSFORMATION ---
@@ -399,12 +409,16 @@ const getLevelPriority = (level) => {
   };
 
   const filteredEmployees = useMemo(() => {
-    const filtered = employees.filter((emp) => {
-      const matchesName = emp.Name.toLowerCase().includes(activeFilters.name.toLowerCase());
+    const filtered = (employees || []).filter((emp) => {
+      // FIX: Null-safe string comparison to prevent "toLowerCase of null" error
+      const empName = emp.Name || "";
+      const matchesName = empName.toLowerCase().includes((activeFilters.name || "").toLowerCase());
+      
       const matchesPosition = activeFilters.position === "all" || emp.Position === activeFilters.position;
       const matchesDivision = activeFilters.division === "all" || emp.Actual_Task === activeFilters.division;
       const matchesPersonelType = activeFilters.personelType === "all" || emp.Personel_Type === activeFilters.personelType;
       const matchesStatus = activeFilters.status === "all" || emp.Status === activeFilters.status;
+      
       const genData = getGeneration(emp.Birthday);
       const matchesGen = activeFilters.gen === "all" || genData?.label === activeFilters.gen;
       return matchesName && matchesPosition && matchesGen && matchesDivision && matchesPersonelType && matchesStatus;
@@ -441,10 +455,22 @@ const getLevelPriority = (level) => {
     });
   }, [employees, activeFilters, sortConfig]);
 
-  const uniquePositions = useMemo(() => Array.from(new Set(employees.map(emp => emp.Position).filter(Boolean))), [employees]);
-  const uniqueDivisions = useMemo(() => Array.from(new Set(employees.map(emp => emp.Actual_Task).filter(Boolean))), [employees]);
-  const uniquePersonelTypes = useMemo(() => Array.from(new Set(employees.map(emp => emp.Personel_Type).filter(Boolean))), [employees]);
+  const uniquePositions = useMemo(() => Array.from(new Set((employees || []).map(emp => emp.Position).filter(Boolean))), [employees]);
+  const uniqueDivisions = useMemo(() => Array.from(new Set((employees || []).map(emp => emp.Actual_Task).filter(Boolean))), [employees]);
+  const uniquePersonelTypes = useMemo(() => Array.from(new Set((employees || []).map(emp => emp.Personel_Type).filter(Boolean))), [employees]);
 
+  // ---------------------------------------------------------
+  // --- AUTH / LOGOUT LOGIC ---
+  // ---------------------------------------------------------
+
+  const handleLogout = () => {
+  sessionStorage.removeItem("isLoggedIn");
+  sessionStorage.removeItem("user");
+  setIsLoggedIn(false); // Change this path to match your login route
+  };
+  if (!isLoggedIn) {
+   return <Login onLoginSuccess={() => setIsLoggedIn(true)} />;
+  } 
   // ---------------------------------------------------------
   // --- CRUD ACTIONS ---
   // ---------------------------------------------------------
@@ -543,6 +569,21 @@ const getLevelPriority = (level) => {
               disabled={isLoading}
             >
               รีเฟรช {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <RefreshCw className="ml-2 h-4 w-4" />}
+            </Button>
+
+            {/* Added Logout Button */}
+            <button 
+            onClick={() => navigate("/dashboardEmp")} 
+            className="px-5 py-2.5 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-black transition-all shadow-md active:scale-95"
+          >
+            ดูสถิติ →
+          </button>
+            <Button 
+              onClick={handleLogout} 
+              variant="outline" 
+              className="h-12 px-4 rounded-xl border-rose-100 bg-white text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+            >
+              <LogOut className="mr-2 h-4 w-4" /> ออกจากระบบ
             </Button>
 
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -760,7 +801,7 @@ const getLevelPriority = (level) => {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-3 items-end">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1"><User size={12} /> ชื่อพนักงาน</Label>
+            <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1"><User size={12} /> ชื่อพนักงาน</Label>
               <Input placeholder="ค้นหาชื่อ..." className="h-11 rounded-xl bg-slate-50/30 border-slate-100 focus:ring-[#d4c391]" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
             </div>
             <div className="space-y-2">
@@ -987,13 +1028,13 @@ const getLevelPriority = (level) => {
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
               Total Personnel: <span className="text-[#334e5e]">{filteredEmployees.length}</span> Records
             </p>
-            <Button 
+            {/* <Button 
               onClick={exportToPDF}
               variant="outline" 
               className="h-8 px-4 rounded-lg border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 text-[9px] font-black uppercase flex items-center gap-2 transition-all active:scale-95"
             >
-              <FileText size={12} /> Save to PDF (Thai Support)
-            </Button>
+              <FileText size={12} /> Save to PDF
+            </Button> */}
           </div>
           <div className="flex gap-4">
             <div className="flex items-center gap-2">

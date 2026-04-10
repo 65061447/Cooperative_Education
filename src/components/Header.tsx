@@ -153,6 +153,14 @@ const Header = () => {
                           บุคลากร
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem className="p-0">
+                        <Link
+                        to="/dashboardEmp"
+                        className="w-full h-full py-3 px-4 text-[#334e5e] font-medium block hover:bg-slate-50 transition-colors"
+                        >
+                          สถิติบุคลากร
+                          </Link>
+                      </DropdownMenuItem>
                       {/* <DropdownMenuItem className="cursor-pointer py-3 px-4 text-[#334e5e] hover:bg-slate-50">
                         โครงสร้างองค์กร
                       </DropdownMenuItem> */}
