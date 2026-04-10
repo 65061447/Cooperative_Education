@@ -153,6 +153,15 @@ useEffect(() => {
   const loginStatus = sessionStorage.getItem("isLoggedIn");
   setIsLoggedIn(loginStatus === "true");
 }, []);
+useEffect(() => {
+    const syncLogout = () => {
+      setIsLoggedIn(false); // Update the real state here
+      // Any other cleanup logic you have in emp.tsx
+    };
+
+    window.addEventListener("userLogout", syncLogout);
+    return () => window.removeEventListener("userLogout", syncLogout);
+  }, []);
 
 
   // ---------------------------------------------------------
@@ -578,13 +587,6 @@ const getLevelPriority = (level) => {
           >
             ดูสถิติ →
           </button>
-            <Button 
-              onClick={handleLogout} 
-              variant="outline" 
-              className="h-12 px-4 rounded-xl border-rose-100 bg-white text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition-colors"
-            >
-              <LogOut className="mr-2 h-4 w-4" /> ออกจากระบบ
-            </Button>
 
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
               <Button onClick={handleOpenAdd} className="bg-[#d4c391] hover:bg-[#c6b47e] text-[#334e5e] font-bold h-12 px-6 rounded-xl shadow-lg shadow-[#d4c391]/20 transition-all active:scale-95">

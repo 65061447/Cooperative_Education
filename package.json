@@ -133,6 +133,7 @@
     "files": [
       "dist/**/*",
       "dist_api/**/*",
+      "ca.pem",
       "main.cjs",
       "node_modules/**/*",
       "package.json"
@@ -141,6 +142,10 @@
       {
         "from": "dist_api/",
         "to": "dist_api"
+      },
+      {
+        "from": "ca.pem",
+        "to": "ca.pem"
       },
       {
         "from": "node_modules/",

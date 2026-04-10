@@ -1,11 +1,12 @@
 "use client";
 
 import React from "react";
-import { Link } from "react-router-dom"; // Change this to react-router-dom
+import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
 import { Button } from "@/components/ui/button";
-import { Search, Home, Lock, AlertTriangle, Info, HelpCircle, Map, Phone, ChevronDown } from "lucide-react";
-import { Input } from "@/components/ui/input";
-
+import { 
+  Search, Home, Lock, AlertTriangle, Info, 
+  HelpCircle, Map, Phone, ChevronDown, LogOut 
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const Header = () => {
+  const navigate = useNavigate(); // Initialize navigation
+
+  const handleLogout = (e) => {
+    // Prevent default behavior to avoid "ditching" to home
+    if (e) e.preventDefault();
+
+    // 1. Clear the storage immediately
+    sessionStorage.removeItem("isLoggedIn");
+    sessionStorage.removeItem("user");
+    
+    // 2. Dispatch a custom event so other components (like emp.tsx) hear it
+    window.dispatchEvent(new Event("userLogout"));
+
+    // 3. Redirect using HashRouter-friendly method
+    // Since you're using HashRouter, this will go to #/emp
+    navigate("/emp"); 
+  };
+
   const navLinks = [
     "เกี่ยวกับ สปส", "ข่าวประชาสัมพันธ์", "กฎหมาย/ระเบียบ", 
     "สิทธิประโยชน์", "คลังความรู้", "ดาวน์โหลดแบบฟอร์ม", 
@@ -48,9 +67,13 @@ const Header = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <Button className="bg-[#d4c391] hover:bg-[#c4b381] text-[#334e5e] font-bold h-11 px-6 text-base rounded-md shadow-sm flex items-center gap-2">
-            <Lock className="h-4 w-4" />
-            เข้าสู่ระบบผู้ประกันตน
+          <Button 
+            type="button" // Ensures it doesn't act as a submit button
+            onClick={handleLogout} 
+            variant="outline" 
+            className="h-12 px-4 rounded-xl border-rose-100 bg-white text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+          >
+            <LogOut className="mr-2 h-4 w-4" /> ออกจากระบบ
           </Button>
         </div>
       </div>
@@ -88,9 +111,9 @@ const Header = () => {
       <div className="bg-[#334e5e] text-white">
         <div className="container mx-auto px-4">
           <nav className="flex items-center h-12 gap-7 overflow-x-auto [scrollbar-width:none]">
-            <Link to="/" className="hover:text-[#d4c391] transition-colors shrink-0">
+            {/* <Link to="/" className="hover:text-[#d4c391] transition-colors shrink-0">
               <Home className="h-5 w-5 fill-current" />
-            </Link>
+            </Link> */}
 
             {navLinks.map((link) => {
               if (link === "คลังความรู้") {
@@ -109,21 +132,20 @@ const Header = () => {
                         <DropdownMenuPortal>
                           <DropdownMenuSubContent className="w-[420px] bg-white p-1 shadow-2xl border-slate-100">
                             <DropdownMenuItem className="p-0">
-                              {/* <Link 
+                               <Link 
                                 to="/graph" 
                                 className="w-full h-full py-4 px-5 text-[#334e5e] font-medium leading-relaxed block hover:bg-slate-100 transition-colors"
                               >
                                 ส่วนที่ 1 สถิติการประสบอันตรายหรือเจ็บป่วยเนื่องจากการทำงานภาพรวมทั่วประเทศ
-                              </Link> */}
+                              </Link>
                             </DropdownMenuItem>
-                            
                             <DropdownMenuItem className="p-0">
-                              {/* <Link 
+                               <Link 
                                 to="/graph2568" 
                                 className="w-full h-full py-4 px-5 text-[#334e5e] font-medium leading-relaxed block hover:bg-slate-100 transition-colors"
                               >
-                                ส่วนที่ 2 2568
-                              </Link> */}
+                                ส่วนที่ 2 ปี 2568
+                              </Link>
                             </DropdownMenuItem>
                           </DropdownMenuSubContent>
                         </DropdownMenuPortal>
@@ -137,7 +159,6 @@ const Header = () => {
                 );
               }
 
-              // --- Added dropdown for "หน่วยงาน" strictly as requested ---
               if (link === "หน่วยงาน") {
                 return (
                   <DropdownMenu key={link}>
@@ -155,15 +176,12 @@ const Header = () => {
                       </DropdownMenuItem>
                       <DropdownMenuItem className="p-0">
                         <Link
-                        to="/dashboardEmp"
-                        className="w-full h-full py-3 px-4 text-[#334e5e] font-medium block hover:bg-slate-50 transition-colors"
+                          to="/dashboardEmp"
+                          className="w-full h-full py-3 px-4 text-[#334e5e] font-medium block hover:bg-slate-50 transition-colors"
                         >
                           สถิติบุคลากร
-                          </Link>
+                        </Link>
                       </DropdownMenuItem>
-                      {/* <DropdownMenuItem className="cursor-pointer py-3 px-4 text-[#334e5e] hover:bg-slate-50">
-                        โครงสร้างองค์กร
-                      </DropdownMenuItem> */}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 );
