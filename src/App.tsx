@@ -11,50 +11,48 @@ import Graph2568 from "./pages/graph2568";
 import Emp from "./pages/Emp";
 import Login from "./components/Login"; // Import your Login component
 import DashboardEmp from "./pages/dashboardEmp";
+import { AuthProvider } from "./pages/Auth";
 
-const queryClient = new QueryClient();
 
 const App = () => {
-  // Check if user is already logged in (persists through refresh)
+  
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem("sso_auth") === "true";
+    return sessionStorage.getItem("token") !== null;
   });
 
   const handleLoginSuccess = () => {
-    localStorage.setItem("sso_auth", "true");
     setIsAuthenticated(true);
   };
 
-  // --- SAFE GUARD ---
-  // If not logged in, we return ONLY the Login UI. 
-  // The Router and Emp page are never even initialized.
-  if (!isAuthenticated) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <Toaster />
-        <Sonner />
-        <Login onLoginSuccess={handleLoginSuccess} />
-      </QueryClientProvider>
-    );
-  }
+  const handleLogout = () => {
+    sessionStorage.removeItem("token");
+    setIsAuthenticated(false);
+  };
+const queryClient = new QueryClient();
 
-  // --- AUTHENTICATED CONTENT ---
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <HashRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/graph" element={<Graph />} />
-            <Route path="/graph2568" element={<Graph2568 />} />
-            <Route path="/emp" element={<Emp />} />
-            <Route path="*" element={<NotFound />} />
-            <Route path="/dashboardEmp" element={<DashboardEmp/>} />
-          </Routes>
-        </HashRouter>
-      </TooltipProvider>
+      <Toaster />
+      <Sonner />
+
+      {!isAuthenticated ? (
+        <Login onLoginSuccess={handleLoginSuccess} />
+      ) : (
+        <AuthProvider>
+          <TooltipProvider>
+            <HashRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/graph" element={<Graph />} />
+                <Route path="/graph2568" element={<Graph2568 />} />
+                <Route path="/emp" element={<Emp />} />
+                <Route path="/dashboardEmp" element={<DashboardEmp />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </HashRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      )}
     </QueryClientProvider>
   );
 };

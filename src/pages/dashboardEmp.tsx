@@ -62,11 +62,26 @@ const DashboardEmp: React.FC = () => {
   const [hiddenGens, setHiddenGens] = useState<string[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetch("http://localhost:3000/employees")
-      .then((res) => res.json())
-      .then((data: Employee[]) => setEmployees(data));
-  }, []);
+useEffect(() => {
+  const token = localStorage.getItem("token");
+
+  fetch("http://localhost:3000/employees/all", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then(async (res) => {
+      if (!res.ok) throw new Error("Unauthorized or fetch failed");
+      return res.json();
+    })
+    .then((result) => {
+      setEmployees(result.data || []);
+    })
+    .catch((err) => {
+      console.error("Dashboard fetch error:", err);
+      setEmployees([]);
+    });
+}, []);
 
   const allChartData = useMemo<ChartDataEntry[]>(() => {
     const map: Record<string, Record<string, number>> = {};
@@ -125,7 +140,8 @@ const DashboardEmp: React.FC = () => {
         
         {/* Swapped Header: Name on Left, Back Button on Right */}
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-black text-[#334e5e] tracking-tight">Personnel Analytics</h1>
+          <h1 className="text-2xl font-black text-[#334e5e] tracking-tight">อัตราคนในแต่ละเจเนอเรชั่นของลูกจ้างประเภทต่างๆ
+          </h1>
           <button 
             onClick={() => navigate("/emp")} 
             className="px-5 py-2.5 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-black transition-all shadow-md active:scale-95"

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useAuth } from "@/pages/Auth";
 import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
 import { Button } from "@/components/ui/button";
 import { 
@@ -20,23 +21,12 @@ import {
 
 const Header = () => {
   const navigate = useNavigate(); // Initialize navigation
+  const { logout } = useAuth();
 
-  const handleLogout = (e) => {
-    // Prevent default behavior to avoid "ditching" to home
-    if (e) e.preventDefault();
-
-    // 1. Clear the storage immediately
-    sessionStorage.removeItem("isLoggedIn");
-    sessionStorage.removeItem("user");
-    
-    // 2. Dispatch a custom event so other components (like emp.tsx) hear it
-    window.dispatchEvent(new Event("userLogout"));
-
-    // 3. Redirect using HashRouter-friendly method
-    // Since you're using HashRouter, this will go to #/emp
-    navigate("/emp"); 
+  const handleLogout = () => {
+    logout();              // clears token + state globally
+    navigate("/emp");        // send back to login/home
   };
-
   const navLinks = [
     "เกี่ยวกับ สปส", "ข่าวประชาสัมพันธ์", "กฎหมาย/ระเบียบ", 
     "สิทธิประโยชน์", "คลังความรู้", "ดาวน์โหลดแบบฟอร์ม", 

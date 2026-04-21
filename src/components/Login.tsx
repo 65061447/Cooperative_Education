@@ -17,36 +17,44 @@ export default function Login({ onLoginSuccess }: { onLoginSuccess: () => void }
   const [password, setPassword] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      // Connecting to your Express backend
-      const response = await fetch("http://localhost:3000/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
+  try {
+    const response = await fetch("http://localhost:3000/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (data.success) {
-        toast.success("เข้าสู่ระบบสำเร็จ");
+    if (data.success) {
+      toast.success("เข้าสู่ระบบสำเร็จ");
 
-        // ✅ ADD THIS (ONLY CHANGE)
-        sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("user", JSON.stringify(data.user || { username }));
+      // ✅ STORE TOKEN (CRITICAL)
+      sessionStorage.setItem("token", data.token);
+      console.log("TOKEN SENT:", data.token);
 
-        onLoginSuccess();
-      } else {
-        toast.error("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
-      }
-    } catch (error) {
-      toast.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
-    } finally {
-      setLoading(false);
+      // optional (only if you want UI access without API call)
+      sessionStorage.setItem("role", data.role);
+
+      // 🔥 reload app so everything re-checks token cleanly
+      onLoginSuccess();
+
+    } else {
+      toast.error("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
     }
-  };
+
+  } catch (error) {
+    toast.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+  } finally {
+    setLoading(false);
+  }
+}; 
+
 
   return (
     <Dialog open={true}>

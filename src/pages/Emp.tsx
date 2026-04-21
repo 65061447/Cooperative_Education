@@ -2,6 +2,7 @@
 
 import Login from "@/components/Login";
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useAuth } from "./Auth";
 import { useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
@@ -87,7 +88,10 @@ interface Employee {
   Actual_Task: string; 
   Status: string;      
 }
-
+interface SessionUser{
+  role? : string;
+}
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const Emp: React.FC = () => {
   // --- REF FOR PDF CAPTURE (ADD THIS TO PRESERVE THAI) ---
   const navigate = useNavigate();
@@ -98,11 +102,19 @@ const Emp: React.FC = () => {
   // ---------------------------------------------------------
   
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [userRole, setUserRole] = useState<string>("User");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  useEffect(() => {
+  const token = sessionStorage.getItem("token");
+  setIsAuthenticated(!!token);
+  }, []);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   // --- SEARCH & FILTER STATES (UI) ---
@@ -142,6 +154,7 @@ const Emp: React.FC = () => {
   });
 
   // --- SORTING STATE ---
+const isAdmin = React.useMemo(() => userRole === "Admin", [userRole]);
   const [sortConfig, setSortConfig] = useState<{ 
     key: 'Entry_Date' | 'Gen' | 'Level' | 'id' | 'Position_No', 
     direction: 'asc' | 'desc' 
@@ -149,21 +162,70 @@ const Emp: React.FC = () => {
     key: 'Position_No',
     direction: 'asc'
   });
-useEffect(() => {
-  const loginStatus = sessionStorage.getItem("isLoggedIn");
-  setIsLoggedIn(loginStatus === "true");
+
+ useEffect(() => {
+  const fetchUser = async () => {
+    const token = sessionStorage.getItem("token");
+
+    if (!token) {
+      setUserRole("User");
+      setIsAuthenticated(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        setUserRole("User");
+        setIsAuthenticated(false);
+        return;
+      }
+
+      const data = await res.json();
+      setUserRole(data.role || "User");
+      setIsAuthenticated(true);
+
+    } catch (err) {
+      console.error(err);
+      setUserRole("User");
+      setIsAuthenticated(false);
+    }
+  };
+
+  fetchUser();
+
+  // 👇 IMPORTANT: re-run when token changes in sessionStorage
+  const onStorageChange = fetchUser;
+
+  window.addEventListener("storage", onStorageChange);
+  window.addEventListener("userLogout", onStorageChange);
+
+  return () => {
+    window.removeEventListener("storage", onStorageChange);
+    window.removeEventListener("userLogout", onStorageChange);
+  };
 }, []);
 useEffect(() => {
-    const syncLogout = () => {
-      setIsLoggedIn(false); // Update the real state here
-      // Any other cleanup logic you have in emp.tsx
-    };
+  console.log("RAW USER:", sessionStorage.getItem("user"));
+  console.log("ROLE:", userRole);
+  console.log("IS ADMIN:", isAdmin);
+}, [userRole]);
+useEffect(() => {
+  const checkAuth = () => {
+    const token = sessionStorage.getItem("token");
+    setIsAuthenticated(!!token);
+  };
 
-    window.addEventListener("userLogout", syncLogout);
-    return () => window.removeEventListener("userLogout", syncLogout);
-  }, []);
+  checkAuth();
 
-
+  window.addEventListener("storage", checkAuth);
+  return () => window.removeEventListener("storage", checkAuth);
+}, []);
   // ---------------------------------------------------------
   // --- HELPERS: UI STYLING ---
   // ---------------------------------------------------------
@@ -171,7 +233,8 @@ useEffect(() => {
   /**
    * กำหนดสีและ Icon ตามระดับตำแหน่ง
    */
-const getLevelStyle = (level) => {
+  console.log("ROLE:", userRole, "isAdmin:", isAdmin);
+const getLevelStyle = (level? : string) => {
   const l = level?.trim() || "";
 
   // --- SSO Level Specific Badges ---
@@ -235,7 +298,7 @@ const getLevelStyle = (level) => {
       return { color: "border-slate-100 bg-slate-50 text-slate-500", icon: <Activity size={10} /> };
   }
 };
-const getLevelPriority = (level) => {
+const getLevelPriority = (level? : string) => {
   const l = level?.trim() || "";
 
   // --- Tier 1: Top Management (SSO 4 / C10-C11) ---
@@ -364,21 +427,43 @@ const getLevelPriority = (level) => {
   // ---------------------------------------------------------
   // --- API HANDLERS ---
   // ---------------------------------------------------------
+const handleSafeFetch = (newPage: number) => {
+  if (newPage < 1 || newPage > totalPages) return;
+  handleFetchData(newPage);
+};
+  const handleFetchData = async (pageNumber = page) => {
+  try {
+    setIsLoading(true);
 
-  const handleFetchData = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("http://localhost:3000/employees");
-      if (response.ok) {
-        const data = await response.json();
-        setEmployees(data);
+    const token = sessionStorage.getItem("token");
+    console.log("TOKEN SENT:", token);
+
+    const query = new URLSearchParams({
+      page: String(pageNumber),
+      limit: String(limit),
+      search: activeFilters.name || "",
+    });
+
+    const response = await fetch(`${API_URL}/employees?${query}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    } catch (error) {
-      console.error("Fetch error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    });
+
+    if (!response.ok) throw new Error("Fetch failed");
+
+    const result = await response.json();
+
+    setEmployees(result.data);
+    setTotalPages(result.totalPages);
+    setPage(result.page);
+
+  } catch (error) {
+    console.error("Fetch error:", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   useEffect(() => {
     handleFetchData();
@@ -389,15 +474,18 @@ const getLevelPriority = (level) => {
   // ---------------------------------------------------------
 
   const handleSearch = () => {
-    setActiveFilters({ 
-      name: searchName, 
-      position: searchPosition, 
-      gen: searchGen,
-      division: searchDivision,
-      personelType: searchPersonelType,
-      status: searchStatus
-    });
+   const newFilters = {
+    name: searchName,
+    position: searchPosition,
+    gen: searchGen,
+    division: searchDivision,
+    personelType: searchPersonelType,
+    status: searchStatus
   };
+
+  setActiveFilters(newFilters);
+  handleFetchData(1); // 🔥 IMPORTANT
+};
 
   const handleClearFilters = () => {
     setSearchName("");
@@ -472,14 +560,9 @@ const getLevelPriority = (level) => {
   // --- AUTH / LOGOUT LOGIC ---
   // ---------------------------------------------------------
 
-  const handleLogout = () => {
-  sessionStorage.removeItem("isLoggedIn");
-  sessionStorage.removeItem("user");
-  setIsLoggedIn(false); // Change this path to match your login route
-  };
-  if (!isLoggedIn) {
-   return <Login onLoginSuccess={() => setIsLoggedIn(true)} />;
-  } 
+    if (!isAuthenticated) {
+     return <Login onLoginSuccess={() => { setIsAuthenticated(true);window.location.reload()}} />;
+    }
   // ---------------------------------------------------------
   // --- CRUD ACTIONS ---
   // ---------------------------------------------------------
@@ -518,29 +601,42 @@ const getLevelPriority = (level) => {
     setIsAddOpen(true);
   };
 
-  const handleSaveEmployee = async () => {
-    const endpoint = isEditing ? "update" : "add";
-    try {
-      const response = await fetch(`http://localhost:3000/employees/${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      if (response.ok) {
-        setIsAddOpen(false);
-        handleFetchData(); 
-      }
-    } catch (error) {
-      console.error("Save error:", error);
+const handleSaveEmployee = async () => {
+  const endpoint = isEditing ? "update" : "add";
+const token = sessionStorage.getItem("token");
+
+  try {
+    const response = await fetch(`${API_URL}/employees/${endpoint}`, {
+      method: "POST",
+      headers: { 
+       "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(formData),
+    });
+
+    if (response.ok) {
+      setIsAddOpen(false);
+      handleFetchData();
+    } else {
+      console.error("❌ Save failed:", await response.text());
     }
-  };
+  } catch (error) {
+    console.error("❌ Save error:", error);
+  }
+};
 
   const confirmDelete = async () => {
+    const token = sessionStorage.getItem("token");
     if (!selectedEmployee?.id) return;
     try {
-      const response = await fetch("http://localhost:3000/employees/delete", {
+      const response = await fetch(`${API_URL}/employees/delete`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
+          },
+        
         body: JSON.stringify({ id: selectedEmployee.id }),
       });
       if (response.ok) {
@@ -571,14 +667,19 @@ const getLevelPriority = (level) => {
           </div>
           
           <div className="flex gap-3">
-            <Button 
-              onClick={handleFetchData} 
-              variant="outline" 
-              className="h-12 px-4 rounded-xl border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
-              disabled={isLoading}
-            >
-              รีเฟรช {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <RefreshCw className="ml-2 h-4 w-4" />}
-            </Button>
+<Button
+  onClick={() => handleFetchData(page)}
+  variant="outline"
+  className="h-12 px-4 rounded-xl border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+  disabled={isLoading}
+>
+  รีเฟรช{" "}
+  {isLoading ? (
+    <Loader2 className="animate-spin h-4 w-4" />
+  ) : (
+    <RefreshCw className="ml-2 h-4 w-4" />
+  )}
+</Button>
 
             {/* Added Logout Button */}
             <button 
@@ -589,9 +690,9 @@ const getLevelPriority = (level) => {
           </button>
 
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <Button onClick={handleOpenAdd} className="bg-[#d4c391] hover:bg-[#c6b47e] text-[#334e5e] font-bold h-12 px-6 rounded-xl shadow-lg shadow-[#d4c391]/20 transition-all active:scale-95">
+             {isAdmin && ( <Button onClick={handleOpenAdd} className="bg-[#d4c391] hover:bg-[#c6b47e] text-[#334e5e] font-bold h-12 px-6 rounded-xl shadow-lg shadow-[#d4c391]/20 transition-all active:scale-95">
                 <PlusCircle className="mr-2 h-5 w-5" /> เพิ่มบุคลากรใหม่
-              </Button>
+              </Button> )}
               <DialogContent className="sm:max-w-[700px] max-h-[90vh] bg-white rounded-3xl p-0 flex flex-col border-none shadow-2xl overflow-hidden">
                 <div className="bg-[#334e5e] p-6 text-white shrink-0 relative overflow-hidden">
                   <div className="absolute top-[-20px] right-[-20px] w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
@@ -873,6 +974,7 @@ const getLevelPriority = (level) => {
         </div>
 
         {/* --- MAIN DATA TABLE SECTION (ADDED REF HERE) --- */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-hidden">
         <div ref={tableRef} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-hidden">
           <table className="w-full text-left border-collapse table-fixed">
             <thead className="bg-slate-50/50 text-[#334e5e] text-[10px] font-black uppercase tracking-tighter">
@@ -935,9 +1037,18 @@ const getLevelPriority = (level) => {
                             <User size={12} />
                           </div>
                           <div className="truncate min-w-0 flex flex-col items-start justify-center">
-                            <button onClick={() => handleOpenEdit(emp)} className="font-bold text-[#334e5e] hover:text-[#d4c391] transition-colors text-left truncate block w-full text-[11px]">
-                              {emp.Name}
-                            </button>
+                             <button
+                                onClick={() => {
+                                  if (isAdmin) handleOpenEdit(emp);
+                                }}
+                                className={`font-bold text-left truncate block w-full text-[11px] ${
+                                  isAdmin
+                                    ? "text-[#334e5e] hover:text-[#d4c391] transition-colors cursor-pointer"
+                                    : "text-slate-400 cursor-not-allowed"
+                                }`}
+                              >
+                                {emp.Name}
+                              </button>
                             <span className="text-[7px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase tracking-tighter inline-flex items-center whitespace-nowrap min-w-fit">
                               {emp.Personel_Type || "N/A"}
                             </span>
@@ -1008,21 +1119,70 @@ const getLevelPriority = (level) => {
                       </td>
                       <td className="px-1 py-2 text-center align-middle border-b border-gray">
                         <div className="flex justify-center gap-0.5 items-center h-full">
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(emp)} className="h-5 w-5 text-blue-500 hover:bg-blue-50">
+                          {isAdmin && (<Button variant="ghost" size="icon" onClick={() => handleOpenEdit(emp)} className="h-5 w-5 text-blue-500 hover:bg-blue-50">
                             <Pencil size={10} />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} className="h-5 w-5 text-rose-400 hover:bg-rose-50">
+                          </Button> )}
+                         {isAdmin && ( <Button variant="ghost" size="icon" onClick={() => { setSelectedEmployee(emp); setIsDeleteOpen(true); }} className="h-5 w-5 text-rose-400 hover:bg-rose-50">
                             <Trash2 size={10} />
-                          </Button>
+                          </Button> )}
                         </div>
                       </td>
                     </tr>
+                    
                   );
                 })
               )}
             </tbody>
           </table>
         </div>
+         {/* PAGINATION FOOTER (THIS IS THE FIX) */}
+<div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/30">
+
+  {/* LEFT SIDE */}
+  <div className="flex items-center gap-2">
+    <Button
+      onClick={() => handleSafeFetch(1)}
+      disabled={page <= 1 || isLoading}
+      className="rounded-xl w-12 h-10 text-lg font-black"
+    >
+      {"</"}
+    </Button>
+
+    <Button
+      onClick={() => handleSafeFetch(page - 1)}
+      disabled={page <= 1 || isLoading}
+      className="rounded-xl px-4 h-10"
+    >
+      Prev
+    </Button>
+  </div>
+
+  {/* CENTER */}
+  <div className="text-xs text-slate-400 font-bold">
+    Page {page} / {totalPages}
+  </div>
+
+  {/* RIGHT SIDE */}
+  <div className="flex items-center gap-2">
+    <Button
+      onClick={() => handleSafeFetch(page + 1)}
+      disabled={page >= totalPages || isLoading}
+      className="rounded-xl px-4 h-10"
+    >
+      Next
+    </Button>
+
+    <Button
+      onClick={() => handleSafeFetch(totalPages)}
+      disabled={page >= totalPages || isLoading}
+      className="rounded-xl w-12 h-10 text-lg font-black"
+    >
+      {"/>"}
+    </Button>
+  </div>
+
+</div>
+</div>
 
         {/* --- SUMMARY INFO FOOTER --- */}
         <div className="mt-4 flex justify-between items-center px-2">
