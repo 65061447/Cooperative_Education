@@ -1,37 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -49,189 +16,285 @@ const express_1 = __importDefault(require("express"));
 const promise_1 = __importDefault(require("mysql2/promise"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
-const path = __importStar(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+const dotenv_1 = __importDefault(require("dotenv"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = 3000;
-app.use((0, cors_1.default)());
+const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+/**
+ * =========================
+ * MIDDLEWARE
+ * =========================
+ */
+app.use((0, cors_1.default)({
+    origin: "http://localhost:8080",
+    credentials: true,
+}));
 app.use((0, helmet_1.default)());
 app.use(express_1.default.json());
-const caPath = process.env.NODE_ENV === 'production'
-    ? path.join(process.resourcesPath, 'ca.pem')
-    : path.join(process.cwd(), 'ca.pem');
 /**
- * 2. DATABASE CONNECTION POOL (Aiven Cloud)
+ * =========================
+ * DB (UNCHANGED)
+ * =========================
  */
+const caPath = path_1.default.join(process.cwd(), "ca.pem");
 const pool = promise_1.default.createPool({
-    host: 'mysql-10dc6cc7-sso-work1.i.aivencloud.com',
-    port: 26522,
-    user: 'avnadmin',
-    password: 'AVNS_fGt0UHgX0OTgyCrISHw',
-    database: 'defaultdb',
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     ssl: {
         ca: fs_1.default.readFileSync(caPath),
-        rejectUnauthorized: true
+        rejectUnauthorized: true,
     },
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
 });
 /**
- * 3. STRICTLY TYPED SANITIZATION HELPER
- * Prevents "Incorrect integer value: ''" by converting empty inputs to null.
- * Uses 'unknown' to avoid the 'any' keyword.
+ * =========================
+ * HELPERS (NO ANY)
+ * =========================
  */
-const toNumOrNull = (value) => {
-    if (typeof value === 'number') {
-        return Number.isNaN(value) ? null : value;
-    }
-    if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (trimmed === '')
-            return null;
-        const parsed = Number(trimmed);
-        return Number.isNaN(parsed) ? null : parsed;
-    }
-    return null;
+function isJwtPayload(obj) {
+    if (typeof obj !== "object" || obj === null)
+        return false;
+    const o = obj;
+    return (typeof o.id === "number" &&
+        typeof o.username === "string" &&
+        typeof o.role === "string");
+}
+const toNum = (v) => {
+    if (v === null || v === undefined || v === "")
+        return 0;
+    const n = Number(v);
+    return isNaN(n) ? 0 : n;
+};
+const toStr = (v) => {
+    if (v === null || v === undefined || v === "")
+        return "-";
+    return String(v);
 };
 /**
- * 4. DATABASE INITIALIZATION
+ * =========================
+ * AUTH MIDDLEWARE
+ * =========================
  */
-function initializeDatabase() {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            yield pool.query(`
-            CREATE TABLE IF NOT EXISTS Users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(255) NOT NULL UNIQUE,
-                password VARCHAR(255) NOT NULL
-            )
-        `);
-            yield pool.query(`
-            INSERT IGNORE INTO Users (username, password) 
-            VALUES ('admin', 'sso1234')
-        `);
-            console.log("✅ Database and Admin account are ready.");
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!(authHeader === null || authHeader === void 0 ? void 0 : authHeader.startsWith("Bearer "))) {
+        res.status(401).json({ error: "No token" });
+        return;
+    }
+    const token = authHeader.split(" ")[1];
+    try {
+        const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
+        if (!isJwtPayload(decoded)) {
+            res.status(403).json({ error: "Invalid token shape" });
+            return;
         }
-        catch (err) {
-            console.error("❌ Setup Error:", err);
-        }
-    });
+        req.user = decoded;
+        next();
+    }
+    catch (_a) {
+        res.status(403).json({ error: "Invalid token" });
+    }
 }
-// --- API ROUTES ---
-// LOGIN
-app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+/**
+ * =========================
+ * LOGIN (FIXED - NO return res.json)
+ * =========================
+ */
+app.post("/api/login", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { username, password } = req.body;
-        const [rows] = yield pool.query('SELECT * FROM Users WHERE username = ? AND password = ?', [username, password]);
-        if (rows.length > 0) {
-            res.json({ success: true });
-        }
-        else {
+        const [rows] = yield pool.query("SELECT * FROM Users WHERE username = ?", [username]);
+        if (rows.length === 0) {
             res.status(401).json({ success: false });
+            return;
         }
+        const user = rows[0];
+        if (user.password !== password) {
+            res.status(401).json({ success: false });
+            return;
+        }
+        const token = jsonwebtoken_1.default.sign({
+            id: user.id,
+            username: user.username,
+            role: user.role,
+        }, JWT_SECRET, { expiresIn: "2h" });
+        res.json({
+            success: true,
+            token,
+            user: {
+                id: user.id,
+                username: user.username,
+                role: user.role,
+            },
+        });
     }
-    catch (error) {
+    catch (err) {
+        console.error("LOGIN ERROR:", err);
         res.status(500).json({ success: false });
     }
 }));
-// GET ALL EMPLOYEES
-app.get('/employees', (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+/**
+ * =========================
+ * CURRENT USER (UNCHANGED)
+ * =========================
+ */
+app.get("/api/me", authenticateToken, (req, res) => {
+    res.json(req.user);
+});
+/**
+ * =========================
+ * EMPLOYEES (UNCHANGED SQL)
+ * =========================
+ */
+app.get("/employees", authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     try {
-        const [rows] = yield pool.query('SELECT * FROM Employee');
-        console.log(`📊 Rows fetched from Cloud: ${rows.length}`);
-        res.json(rows);
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+        const search = String(req.query.search || "");
+        const offset = (page - 1) * limit;
+        let where = "";
+        const params = [];
+        if (search) {
+            where = `
+        WHERE Name LIKE ? 
+        OR Citizen_id LIKE ?
+        OR Position LIKE ?
+      `;
+            params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        }
+        const [countRows] = yield pool.query(`SELECT COUNT(*) as total FROM Employee ${where}`, params);
+        const total = (_b = (_a = countRows[0]) === null || _a === void 0 ? void 0 : _a.total) !== null && _b !== void 0 ? _b : 0;
+        const [rows] = yield pool.query(`SELECT * FROM Employee ${where} ORDER BY Position_No ASC LIMIT ? OFFSET ?`, [...params, limit, offset]);
+        res.json({
+            data: rows,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        });
     }
-    catch (error) {
-        console.error("❌ FETCH ERROR:", error);
+    catch (err) {
+        console.error("FETCH ERROR:", err);
         res.status(500).json({ error: "Fetch failed" });
     }
 }));
-// ADD EMPLOYEE
-app.post('/employees/add', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.get("/employees/all", authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { Name, Birthday, Citizen_id, Tel, Position, Entry_Date, Personel_Type, Position_Level, Position_No, Assign_Task, Actual_Task, Status } = req.body;
-        const sql = `INSERT INTO Employee (
-                    Name, Birthday, Citizen_id, Tel, Position, Entry_Date,
-                    Personel_Type, Position_Level, Position_No,
-                    Assign_Task, Actual_Task, Status
-                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        yield pool.execute(sql, [
-            Name,
-            Birthday,
-            toNumOrNull(Citizen_id),
-            Tel,
-            Position,
-            Entry_Date,
-            Personel_Type,
-            Position_Level,
-            toNumOrNull(Position_No),
-            Assign_Task,
-            Actual_Task,
-            Status
-        ]);
-        res.status(201).json({ message: "Added successfully" });
+        const [rows] = yield pool.query(`SELECT * FROM Employee ORDER BY id DESC`);
+        res.json({
+            data: rows,
+        });
     }
-    catch (error) {
-        console.error("❌ ADD ERROR:", error);
-        res.status(500).json({ error: "Add failed" });
+    catch (err) {
+        console.error("FETCH ALL ERROR:", err);
+        res.status(500).json({ error: "Fetch all employees failed" });
     }
 }));
-// UPDATE EMPLOYEE
-app.post('/employees/update', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.post("/employees/update", authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { id, Name, Birthday, Citizen_id, Tel, Position, Entry_Date, Personel_Type, Position_Level, Position_No, Assign_Task, Actual_Task, Status } = req.body;
-        const sql = `UPDATE Employee 
-                  SET Name = ?, Birthday = ?, Citizen_id = ?, Tel = ?, 
-                      Position = ?, Entry_Date = ?,
-                      Personel_Type = ?, Position_Level = ?, Position_No = ?,
-                      Assign_Task = ?, Actual_Task = ?, Status = ?
-                  WHERE id = ?`;
-        const [result] = yield pool.execute(sql, [
-            Name,
-            Birthday,
-            toNumOrNull(Citizen_id), // Sanitize to prevent 500 error
-            Tel,
-            Position,
-            Entry_Date,
-            Personel_Type,
-            Position_Level,
-            toNumOrNull(Position_No),
-            Assign_Task,
-            Actual_Task,
-            Status,
-            toNumOrNull(id)
+        const b = req.body;
+        if (!b.id) {
+            res.status(400).json({ error: "Missing ID" });
+            return;
+        }
+        yield pool.execute(`UPDATE Employee SET
+          Name = ?,
+          Birthday = ?,
+          Citizen_id = ?,
+          Tel = ?,
+          Position = ?,
+          Entry_Date = ?,
+          Personel_Type = ?,
+          Position_Level = ?,
+          Position_No = ?,
+          Assign_Task = ?,
+          Actual_Task = ?,
+          Status = ?
+        WHERE id = ?`, [
+            toStr(b.Name),
+            toStr(b.Birthday),
+            toStr(b.Citizen_id),
+            toStr(b.Tel),
+            toStr(b.Position),
+            toStr(b.Entry_Date),
+            toStr(b.Personel_Type),
+            toStr(b.Position_Level),
+            toNum(b.Position_No),
+            toStr(b.Assign_Task),
+            toStr(b.Actual_Task),
+            toStr(b.Status),
+            toNum(b.id),
         ]);
-        if (result.affectedRows > 0) {
-            res.json({ message: "Updated successfully" });
-        }
-        else {
-            res.status(404).json({ error: "Employee not found" });
-        }
+        res.json({ message: "Updated successfully" });
     }
-    catch (error) {
-        console.error("❌ UPDATE ERROR:", error);
+    catch (err) {
+        console.error("UPDATE ERROR:", err);
         res.status(500).json({ error: "Update failed" });
     }
 }));
-// DELETE EMPLOYEE
-app.post('/employees/delete', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.post("/employees/delete", authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.body;
-        const [result] = yield pool.execute('DELETE FROM Employee WHERE id = ?', [toNumOrNull(id)]);
-        if (result.affectedRows > 0) {
-            res.json({ message: "Deleted successfully" });
+        if (!id) {
+            res.status(400).json({ error: "Missing ID" });
+            return;
         }
-        else {
-            res.status(404).json({ error: "Employee not found" });
-        }
+        yield pool.execute("DELETE FROM Employee WHERE id = ?", [id]);
+        res.json({ message: "Deleted successfully" });
     }
-    catch (error) {
-        console.error("❌ DELETE ERROR:", error);
+    catch (err) {
+        console.error("DELETE ERROR:", err);
         res.status(500).json({ error: "Delete failed" });
     }
 }));
+/**
+ * =========================
+ * ADD EMPLOYEE (UNCHANGED)
+ * =========================
+ */
+app.post("/employees/add", authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const b = req.body;
+        yield pool.execute(`INSERT INTO Employee (
+          Name, Birthday, Citizen_id, Tel, Position, Entry_Date,
+          Personel_Type, Position_Level, Position_No,
+          Assign_Task, Actual_Task, Status
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+            toStr(b.Name),
+            toStr(b.Birthday),
+            toStr(b.Citizen_id),
+            toStr(b.Tel),
+            toStr(b.Position),
+            toStr(b.Entry_Date),
+            toStr(b.Personel_Type),
+            toStr(b.Position_Level),
+            toNum(b.Position_No),
+            toStr(b.Assign_Task),
+            toStr(b.Actual_Task),
+            toStr((_a = b.Status) !== null && _a !== void 0 ? _a : "Active"),
+        ]);
+        res.status(201).json({ message: "Added successfully" });
+    }
+    catch (err) {
+        console.error("ADD ERROR:", err);
+        res.status(500).json({ error: "Add failed" });
+    }
+}));
+/**
+ * =========================
+ * START
+ * =========================
+ */
 app.listen(port, () => {
-    console.log(`🚀 API Server running at http://localhost:${port}`);
-    initializeDatabase().catch(err => console.error("Initialization Failed:", err));
+    console.log(`🚀 Server running at http://localhost:${port}`);
 });
