@@ -431,23 +431,27 @@ const handleSafeFetch = (newPage: number) => {
   if (newPage < 1 || newPage > totalPages) return;
   handleFetchData(newPage);
 };
-  const handleFetchData = async (pageNumber = page) => {
+  const handleFetchData = async (
+  pageNumber = page,
+  filters = activeFilters
+) => {
   try {
     setIsLoading(true);
 
     const token = sessionStorage.getItem("token");
-    console.log("TOKEN SENT:", token);
 
     const query = new URLSearchParams({
       page: String(pageNumber),
       limit: String(limit),
-      search: activeFilters.name || "",
+      search: filters.name || "", // ✅ NOW VALID
+      sortKey: sortConfig.key,
+      sortDir: sortConfig.direction,
     });
 
-    const response = await fetch(`${API_URL}/employees?${query}`, {
+    const response = await fetch(`${API_URL}/employees/all`, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) throw new Error("Fetch failed");
@@ -464,7 +468,6 @@ const handleSafeFetch = (newPage: number) => {
     setIsLoading(false);
   }
 };
-
   useEffect(() => {
     handleFetchData();
   }, []);
@@ -473,18 +476,20 @@ const handleSafeFetch = (newPage: number) => {
   // --- SEARCH & FILTER LOGIC ---
   // ---------------------------------------------------------
 
-  const handleSearch = () => {
-   const newFilters = {
+const handleSearch = () => {
+  const newFilters = {
     name: searchName,
     position: searchPosition,
     gen: searchGen,
     division: searchDivision,
     personelType: searchPersonelType,
-    status: searchStatus
+    status: searchStatus,
   };
 
   setActiveFilters(newFilters);
-  handleFetchData(1); // 🔥 IMPORTANT
+
+  // ✅ PASS DIRECTLY (no delay bug anymore)
+  handleFetchData(1, newFilters);
 };
 
   const handleClearFilters = () => {
@@ -1136,9 +1141,9 @@ const token = sessionStorage.getItem("token");
           </table>
         </div>
          {/* PAGINATION FOOTER (THIS IS THE FIX) */}
-<div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/30">
+{/* <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/30">
 
-  {/* LEFT SIDE */}
+  LEFT SIDE
   <div className="flex items-center gap-2">
     <Button
       onClick={() => handleSafeFetch(1)}
@@ -1157,12 +1162,12 @@ const token = sessionStorage.getItem("token");
     </Button>
   </div>
 
-  {/* CENTER */}
+  CENTER 
   <div className="text-xs text-slate-400 font-bold">
     Page {page} / {totalPages}
   </div>
 
-  {/* RIGHT SIDE */}
+  RIGHT SIDE 
   <div className="flex items-center gap-2">
     <Button
       onClick={() => handleSafeFetch(page + 1)}
@@ -1181,7 +1186,7 @@ const token = sessionStorage.getItem("token");
     </Button>
   </div>
 
-</div>
+</div>*/}
 </div>
 
         {/* --- SUMMARY INFO FOOTER --- */}

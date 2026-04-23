@@ -230,6 +230,19 @@ app.get("/employees", authenticateToken, async (req: AuthRequest, res: Response)
     const limit = Number(req.query.limit) || 10;
     const search = String(req.query.search || "");
 
+    // ✅ NEW: sorting
+    const sortKeyRaw = String(req.query.sortKey || "Position_No");
+    const sortDirRaw = String(req.query.sortDir || "asc");
+
+    // ✅ SECURITY: whitelist columns (VERY IMPORTANT)
+    const allowedSort = ["Position_No", "Entry_Date", "id"];
+
+    const sortKey = allowedSort.includes(sortKeyRaw)
+      ? sortKeyRaw
+      : "Position_No";
+
+    const sortDir = sortDirRaw.toLowerCase() === "desc" ? "DESC" : "ASC";
+
     const offset = (page - 1) * limit;
 
     let where = "";
@@ -244,6 +257,7 @@ app.get("/employees", authenticateToken, async (req: AuthRequest, res: Response)
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
+    // ✅ COUNT
     const [countRows] = await pool.query<CountRow[]>(
       `SELECT COUNT(*) as total FROM Employee ${where}`,
       params
@@ -251,8 +265,12 @@ app.get("/employees", authenticateToken, async (req: AuthRequest, res: Response)
 
     const total = countRows[0]?.total ?? 0;
 
+    // ✅ MAIN QUERY (NOW DYNAMIC SORT)
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT * FROM Employee ${where} ORDER BY Position_No ASC LIMIT ? OFFSET ?`,
+      `SELECT * FROM Employee 
+       ${where} 
+       ORDER BY ${sortKey} ${sortDir}
+       LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
 
