@@ -259,7 +259,7 @@ const getLevelStyle = (level? : string) => {
   if (l.includes("1")) {
     return { 
       color: "border-blue-100 bg-blue-50/50 text-blue-700", 
-      icon: <Shield size={10} className="text-blue-400" /> 
+      icon: <Shield size={10} className="text-blue-400" />  
     };
   }
 
